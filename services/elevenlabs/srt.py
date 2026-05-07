@@ -514,7 +514,13 @@ def _merge_utterances_to_blocks(
 
         block = blocks[-1]
         if _can_merge_into_block(block, utterance, options):
-            if block.utterances[-1].speaker_id == utterance.speaker_id:
+            same_speaker = (
+                block.utterances[-1].speaker_id == utterance.speaker_id
+            )
+            prev_ends_hard = _ends_with_split_punctuation(
+                block.utterances[-1].text, options
+            )
+            if same_speaker and not prev_ends_hard:
                 block.utterances[-1].text = _join_text_parts(
                     block.utterances[-1].text,
                     utterance.text,
@@ -522,6 +528,9 @@ def _merge_utterances_to_blocks(
                 )
                 block.utterances[-1].end = utterance.end
             else:
+                # Cross-speaker, or same-speaker across hard punct —
+                # keep as separate utterances so the inline pass can
+                # space-join short same-speaker pairs.
                 block.utterances.append(utterance)
             block.end = max(block.end, utterance.end)
         else:
@@ -667,7 +676,17 @@ def _can_merge_into_block(
     if same_speaker and _ends_with_split_punctuation(
         block.utterances[-1].text, options
     ):
-        return False
+        # Two complete same-speaker sentences normally never share a
+        # block. Exception: both sides are short and inline-eligible —
+        # allow the merge so `_inline_same_speaker_utterances` can join
+        # them with a space (e.g. 「いいんすか？ それ。」).
+        if not (
+            options.inline_short_same_speaker_utterances
+            and _can_inline_same_speaker_utterance(
+                block.utterances[-1], utterance, options
+            )
+        ):
+            return False
     max_gap = (
         options.merge_same_speaker_gap_s
         if same_speaker
@@ -679,8 +698,15 @@ def _can_merge_into_block(
         return False
     if len(block.utterances) + 1 > options.max_utterances_per_block:
         return False
+    candidate_utterances = (
+        _inline_same_speaker_utterances(
+            [*block.utterances, utterance], options
+        )
+        if options.inline_short_same_speaker_utterances
+        else [*block.utterances, utterance]
+    )
     if (
-        _rendered_line_count([*block.utterances, utterance], options)
+        _rendered_line_count(candidate_utterances, options)
         > options.max_lines_per_block
     ):
         return False

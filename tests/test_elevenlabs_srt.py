@@ -166,16 +166,73 @@ class ElevenLabsSrtTests(unittest.TestCase):
             ]
         }
 
-        # The split between blocks 1/2 and 3/4 is driven by the 2-line
-        # cap. Pass it explicitly to keep this test pinned to that cap.
+        # The split between blocks is driven by the 2-line cap. Pass it
+        # explicitly to keep this test pinned to that cap. With short
+        # same-speaker hard-punct merging enabled, 三+四 land in one
+        # block (inlined), and 五+六 form a final dialogue block.
         srt = _convert_payload_with_options(
             payload, SrtFormatOptions(max_lines_per_block=2)
         )
 
         self.assertIn("1\n00:00:00,000 --> 00:00:00,450\n-一。\n-二。", srt)
-        self.assertIn("2\n00:00:00,450 --> 00:00:00,800\n三。", srt)
-        self.assertIn("3\n00:00:00,800 --> 00:00:01,150\n-四。\n-五。", srt)
-        self.assertIn("4\n00:00:01,150 --> 00:00:02,000\n六。", srt)
+        self.assertIn("2\n00:00:00,450 --> 00:00:00,550\n三。 四。", srt)
+        self.assertIn("3\n00:00:00,550 --> 00:00:01,350\n-五。\n-六。", srt)
+        # No 4th block — 五+六 together fit the dialogue cap.
+        self.assertNotIn("\n4\n", srt.rstrip("\n") + "\n")
+
+    def test_merges_short_same_speaker_utterances_across_hard_punct(self):
+        # Two short same-speaker utterances back-to-back: previous ends
+        # in 「？」, next ends in 「。」, both within the inline limits.
+        # Should land in one block joined by a single space, not split
+        # into two adjacent blocks with their own timestamps.
+        payload = {
+            "words": [
+                word("い", 289.14, 289.38, "speaker_1"),
+                word("い", 289.38, 289.48, "speaker_1"),
+                word("ん", 289.48, 289.6, "speaker_1"),
+                word("す", 289.6, 289.7, "speaker_1"),
+                word("か", 289.7, 289.78, "speaker_1"),
+                word("？", 289.78, 289.82, "speaker_1"),
+                word("そ", 289.82, 289.92, "speaker_1"),
+                word("れ", 289.92, 290.36, "speaker_1"),
+                word("。", 290.36, 290.36, "speaker_1"),
+            ]
+        }
+
+        srt = convert_payload_to_srt(payload)
+
+        self.assertIn("いいんすか？ それ。", srt)
+        self.assertNotIn("いいんすか？\nそれ。", srt)
+        self.assertNotIn("\n2\n", srt.rstrip("\n") + "\n")
+
+    def test_merges_short_same_speaker_utterances_with_small_gap(self):
+        # Same-speaker pair separated by a 0.10s pause (within
+        # merge_same_speaker_gap_s) and both ending in 「。」. Should
+        # still merge and inline despite the small gap.
+        payload = {
+            "words": [
+                word("そ", 343.18, 343.28, "speaker_1"),
+                word("う", 343.28, 343.44, "speaker_1"),
+                word("か", 343.44, 343.56, "speaker_1"),
+                word("そ", 343.56, 343.62, "speaker_1"),
+                word("う", 343.62, 343.74, "speaker_1"),
+                word("か", 343.74, 343.82, "speaker_1"),
+                word("。", 343.82, 343.82, "speaker_1"),
+                word("ご", 343.92, 344.08, "speaker_1"),
+                word("め", 344.08, 344.22, "speaker_1"),
+                word("ん", 344.22, 344.28, "speaker_1"),
+                word("ご", 344.28, 344.4, "speaker_1"),
+                word("め", 344.4, 344.5, "speaker_1"),
+                word("ん", 344.5, 344.58, "speaker_1"),
+                word("。", 344.58, 344.58, "speaker_1"),
+            ]
+        }
+
+        srt = convert_payload_to_srt(payload)
+
+        self.assertIn("そうかそうか。 ごめんごめん。", srt)
+        self.assertNotIn("そうかそうか。\nごめんごめん。", srt)
+        self.assertNotIn("\n2\n", srt.rstrip("\n") + "\n")
 
     def test_inlines_short_repeated_same_speaker_utterances(self):
         payload = {
@@ -815,10 +872,10 @@ class ElevenLabsSrtTests(unittest.TestCase):
         self.assertIn("2\n00:00:00,800 --> 00:00:02,000\n後です。", srt)
 
     def test_hold_does_not_shrink_back_to_back_blocks(self):
-        # Blocks 1-3 sit at 0.0→0.45, 0.45→0.8, 0.8→1.15 (no gap
-        # between them). cap = next.start - 0.08 < block.end, so the
-        # no-shrink rule keeps each end exactly as the segmenter laid
-        # it out. Only the last block (1.15→1.5) extends by hold.
+        # Blocks 1-2 sit at 0.0→0.45 and 0.45→0.55 (no gap between
+        # them). cap = next.start - 0.08 < block.end, so the no-shrink
+        # rule keeps each end exactly as the segmenter laid it out.
+        # Only the last block (0.55→0.85) extends by hold to 1.35.
         payload = {
             "words": [
                 word("一。", 0.0, 0.1, "speaker_0"),
@@ -840,9 +897,9 @@ class ElevenLabsSrtTests(unittest.TestCase):
         )
 
         self.assertIn("1\n00:00:00,000 --> 00:00:00,450", srt)
-        self.assertIn("2\n00:00:00,450 --> 00:00:00,800", srt)
-        self.assertIn("3\n00:00:00,800 --> 00:00:01,150", srt)
-        self.assertIn("4\n00:00:01,150 --> 00:00:02,000", srt)
+        self.assertIn("2\n00:00:00,450 --> 00:00:00,550", srt)
+        self.assertIn("3\n00:00:00,550 --> 00:00:01,350", srt)
+        self.assertNotIn("\n4\n", srt.rstrip("\n") + "\n")
 
     def test_hold_disabled_when_zero(self):
         # subtitle_hold_after_end_s=0 disables the extension pass —
