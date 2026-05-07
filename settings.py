@@ -92,6 +92,10 @@ class Settings(BaseSettings):
         default=None,
         description="Path for automatic archival. If set, completed projects will be archived to this location",
     )
+    package_path: Path | None = Field(
+        default=None,
+        description="Path for final deliverable packaging. If set, after archive, burn ASS subtitles into the video and copy the cover image to <package_path>/<id>_<name>/",
+    )
 
     # --- Optional Codex-driven post-processing ------------------------------
     enable_srt_refine: bool = Field(

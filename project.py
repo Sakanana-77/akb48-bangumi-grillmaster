@@ -353,10 +353,10 @@ class Project(BaseModel):
         )
         self.save()
 
-    def archive(self) -> None:
+    def archive(self) -> Path | None:
         """Archive the entire project by moving it to the archived directory.
 
-        Moves the project directory to the archived path.
+        Returns the new path on success, or None if archived_path is not configured.
 
         Raises:
             FileNotFoundError: If the project directory doesn't exist.
@@ -364,7 +364,7 @@ class Project(BaseModel):
         """
         if settings.archived_path is None:
             logger.warning("Archived path is not set, skipping archiving")
-            return
+            return None
 
         archived_root = settings.archived_path
         archived_path = archived_root / f"{self.id}_{self.name}"
@@ -390,6 +390,7 @@ class Project(BaseModel):
         logger.info(f"Archiving project {self.id} to {archived_path}")
         shutil.move(str(self.project_path), str(archived_path))
         logger.info(f"Project {self.id} archived successfully")
+        return archived_path
 
     # Source management
     @property

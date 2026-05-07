@@ -5,6 +5,7 @@ of the video captioning workflow, from fetching metadata to translation.
 """
 
 from concurrent.futures import Future, ThreadPoolExecutor
+from pathlib import Path
 
 from project import Project, ProgressStage, VideoSource
 from loguru import logger
@@ -14,6 +15,7 @@ from services.codex import generate_cover, refine_subtitles
 from services.elevenlabs import ElevenLabsASR, convert_file
 from services.gemini import Gemini, GeminiTranslationError, TranslationRequest
 from services.media import MediaProcessor
+from services.package import package_project
 from services.ytdlp import (
     download_video,
     get_abema_episode_talents,
@@ -345,11 +347,16 @@ def process_project(
     logger.success(f"Project processing complete: {project_id}")
 
     # Archive project
+    archived_location: Path | None = None
     if settings.archived_path is not None:
-        project.archive()
-        logger.success(f"Project {project_id} archived successfully")
+        archived_location = project.archive()
     else:
         logger.warning("Archived path is not set, skipping archiving")
+
+    # Package project (burn-in + cover copy)
+    if settings.package_path is not None:
+        source_root = archived_location or project.project_path
+        package_project(project, source_root, settings.package_path)
 
     logger.info(
         f"Project {project_id} total accumulated API cost: "

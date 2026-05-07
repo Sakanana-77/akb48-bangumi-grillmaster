@@ -7,6 +7,7 @@ and combining multiple video files.
 
 from pathlib import Path
 import ffmpeg
+import subprocess
 import tempfile
 import os
 from loguru import logger
@@ -130,6 +131,67 @@ class MediaProcessor:
             logger.success(f"Successfully combined videos into: {output_file}")
         except Exception as e:
             logger.error(f"Failed to combine videos: {e}")
+            raise
+
+    @staticmethod
+    def burn_in_subtitles(
+        video_file: Path,
+        subtitle_file: Path,
+        output_file: Path,
+    ) -> None:
+        """Burn ASS/SRT subtitles into the video.
+
+        Implementation note: ffmpeg's ``subtitles`` filter does not handle
+        absolute Windows paths reliably (colon parsing collides with filter
+        argument syntax). This method runs ffmpeg with ``cwd`` set to the
+        video's parent directory and references the subtitle by relative
+        filename, which sidesteps the escaping problem entirely. The video
+        and subtitle must therefore live in the same directory.
+
+        Raises:
+            ValueError: If video and subtitle are not in the same directory.
+            subprocess.CalledProcessError: If ffmpeg exits non-zero.
+        """
+        cwd = video_file.parent
+        if subtitle_file.parent != cwd:
+            raise ValueError(
+                f"video and subtitle must share a directory for burn-in: "
+                f"{cwd} vs {subtitle_file.parent}"
+            )
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        logger.info(
+            f"Burning subtitles {subtitle_file.name} into "
+            f"{video_file.name} -> {output_file}"
+        )
+        cmd = [
+            "ffmpeg",
+            "-i",
+            video_file.name,
+            "-vf",
+            f"subtitles={subtitle_file.name}",
+            "-c:a",
+            "copy",
+            str(output_file),
+            "-y",
+        ]
+        try:
+            subprocess.run(
+                cmd,
+                cwd=cwd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr_tail = "\n".join(
+                (exc.stderr or "").strip().splitlines()[-20:]
+            )
+            logger.error(
+                f"ffmpeg burn-in failed (exit {exc.returncode}): {stderr_tail}"
+            )
             raise
 
     @staticmethod

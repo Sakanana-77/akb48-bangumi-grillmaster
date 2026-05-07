@@ -51,6 +51,7 @@ class WorkflowGeminiCostTests(unittest.TestCase):
             ),
             patch.object(workflow_module, "Gemini") as gemini_cls,
             patch.object(workflow_module.settings, "archived_path", None),
+            patch.object(workflow_module.settings, "package_path", None),
         ):
             gemini_cls.return_value.translate.return_value = summary
             workflow_module.process_project("demo")
