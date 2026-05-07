@@ -60,6 +60,27 @@ def process(
             show_default=False,
         ),
     ] = None,
+    refine: Annotated[
+        bool,
+        typer.Option(
+            "--refine",
+            help=(
+                "Force-enable subtitle refinement stage for this run. "
+                "Overrides ENABLE_SRT_REFINE setting (default off)."
+            ),
+        ),
+    ] = False,
+    cover: Annotated[
+        bool,
+        typer.Option(
+            "--cover",
+            help=(
+                "Force-enable async cover image generation for this run. "
+                "Overrides ENABLE_COVER_GENERATION setting (default off). "
+                "Skipped entirely when --break-after is also set."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Submit and process a online video for captioning and translation.
 
@@ -82,7 +103,7 @@ def process(
     logger.info(
         f"CLI invoked with source_str={source_str}, "
         f"translation_hint={translation_hint}, break_after={break_after}, "
-        f"parent_project={parent_project}"
+        f"parent_project={parent_project}, refine={refine}, cover={cover}"
     )
 
     try:
@@ -91,6 +112,8 @@ def process(
             translation_hint=translation_hint,
             break_after=break_after,
             parent_project_path=parent_project,
+            enable_refine=refine,
+            enable_cover=cover,
         )
         logger.success(f"Successfully completed processing for {source_str}")
     except Exception as e:

@@ -4,10 +4,13 @@ This module provides the main processing function that coordinates all stages
 of the video captioning workflow, from fetching metadata to translation.
 """
 
+from concurrent.futures import Future, ThreadPoolExecutor
+
 from project import Project, ProgressStage, VideoSource
 from loguru import logger
 from settings import settings
 from services.ass import convert_file as convert_srt_to_ass
+from services.codex import generate_cover, refine_subtitles
 from services.elevenlabs import ElevenLabsASR, convert_file
 from services.gemini import Gemini, GeminiTranslationError, TranslationRequest
 from services.media import MediaProcessor
@@ -24,6 +27,8 @@ def submit_project(
     translation_hint: str | None = None,
     break_after: ProgressStage | None = None,
     parent_project_path: str | None = None,
+    enable_refine: bool = False,
+    enable_cover: bool = False,
 ) -> None:
     """Submit a new video project for processing.
 
@@ -39,6 +44,11 @@ def submit_project(
         parent_project_path: Optional filesystem path to a parent project
             directory whose pre_pass.json should seed this project's pre-pass
             for cross-episode consistency.
+        enable_refine: Force-enable the optional subtitle refinement stage.
+            Overrides ``settings.enable_srt_refine`` when True.
+        enable_cover: Force-enable the optional async cover image stylization.
+            Overrides ``settings.enable_cover_generation`` when True. Always
+            skipped when ``break_after`` is set.
 
     Note:
         The project will be automatically saved to the projects directory before
@@ -52,7 +62,12 @@ def submit_project(
     )
     new_project.save()
     logger.info(f"Project saved: {source_str}")
-    process_project(new_project.id, break_after=break_after)
+    process_project(
+        new_project.id,
+        break_after=break_after,
+        enable_refine=enable_refine,
+        enable_cover=enable_cover,
+    )
 
 
 def _should_stop_after_stage(
@@ -72,19 +87,23 @@ def _should_stop_after_stage(
 
 
 def process_project(
-    project_id: str, break_after: ProgressStage | None = None
+    project_id: str,
+    break_after: ProgressStage | None = None,
+    enable_refine: bool = False,
+    enable_cover: bool = False,
 ) -> None:
     """Process a video project through the complete captioning pipeline.
 
     This function orchestrates the entire workflow:
     1. Fetch video metadata from source
-    2. Download video
+    2. Download video (kicks off async cover generation if enabled)
     3. Combine downloaded video segments
     4. Extract audio from video
     5. Perform automatic speech recognition (ASR) and write source SRT
     6. Translate subtitles using Gemini
-    7. Convert translated SRT into a styled ASS subtitle file
-    8. Archive project (optional)
+    7. Refine Traditional Chinese subtitles via Codex (optional)
+    8. Convert refined/translated SRT into a styled ASS subtitle file
+    9. Wait for cover image generation, then archive (optional)
 
     Each stage is skipped if it has already been completed (idempotent).
     Progress is automatically saved after each stage.
@@ -94,11 +113,23 @@ def process_project(
         break_after: Optional progress stage to stop after. If the stage is
             already complete on a resumed project, processing stops before the
             next stage.
+        enable_refine: Force-enable the optional subtitle refinement stage.
+            Overrides ``settings.enable_srt_refine`` when True.
+        enable_cover: Force-enable the optional async cover image stylization.
+            Overrides ``settings.enable_cover_generation`` when True. Always
+            skipped when ``break_after`` is set.
 
     Raises:
-        Exception: If any stage of the processing fails.
+        Exception: If any required stage of the processing fails.
     """
     logger.info(f"Starting project processing: {project_id}")
+    do_refine = enable_refine or settings.enable_srt_refine
+    do_cover = enable_cover or settings.enable_cover_generation
+    cover_executor: ThreadPoolExecutor | None = None
+    cover_future: Future | None = None
+    project: Project | None = None
+    pipeline_error: Exception | None = None
+
     try:
         project = Project.from_source_str(project_id)
         translation_result = None
@@ -137,6 +168,16 @@ def process_project(
             project_id, break_after, ProgressStage.DOWNLOADED
         ):
             return
+
+        # Start async cover generation (parallel to remaining stages)
+        if do_cover and break_after is None and not project.is_cover_generated:
+            logger.info(
+                f"Stage: Starting async cover generation for {project_id}"
+            )
+            cover_executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="cover"
+            )
+            cover_future = cover_executor.submit(generate_cover, project)
 
         # Process video
         if not project.is_video_processed:
@@ -244,10 +285,31 @@ def process_project(
         ):
             return
 
+        # Process subtitle refinement (optional)
+        if do_refine:
+            if not project.is_srt_refined:
+                logger.info(f"Stage: Refining subtitles for {project_id}")
+                refine_subtitles(project)
+                project.mark_progress(ProgressStage.SRT_REFINED)
+                logger.success("Stage complete: Subtitles refined")
+            else:
+                logger.debug("Stage skipped: Subtitles already refined")
+            if _should_stop_after_stage(
+                project_id, break_after, ProgressStage.SRT_REFINED
+            ):
+                return
+        else:
+            logger.debug("Stage skipped: SRT refinement disabled")
+
         # Process ASS conversion
         if not project.is_ass_converted:
             logger.info(f"Stage: Converting SRT to ASS for {project_id}")
-            convert_srt_to_ass(project.translated_path, project.ass_path)
+            srt_source = (
+                project.refined_srt_path
+                if project.refined_srt_path.exists()
+                else project.translated_path
+            )
+            convert_srt_to_ass(srt_source, project.ass_path)
             project.mark_progress(ProgressStage.ASS_CONVERTED)
             logger.success("Stage complete: ASS generated")
         else:
@@ -257,20 +319,39 @@ def process_project(
         ):
             return
 
-        logger.success(f"Project processing complete: {project_id}")
-
-        # Archive project
-        if settings.archived_path is not None:
-            project.archive()
-            logger.success(f"Project {project_id} archived successfully")
-        else:
-            logger.warning("Archived path is not set, skipping archiving")
-
-        logger.info(
-            f"Project {project_id} total accumulated API cost: "
-            f"${project.total_cost:.4f}"
-        )
-
     except Exception as e:
+        pipeline_error = e
         logger.error(f"Project processing failed for {project_id}: {e}")
-        raise
+    finally:
+        # Always wait for cover generation to finish, even on pipeline error.
+        # codex subscription cost is already incurred; abandoning mid-flight
+        # would orphan the subprocess and lose the work.
+        if cover_future is not None and project is not None:
+            try:
+                cover_future.result(
+                    timeout=settings.codex_default_timeout_secs * 2
+                )
+                project.is_cover_generated = True
+                project.save()
+                logger.success("Stage complete: Cover generated")
+            except Exception as cover_error:
+                logger.warning(f"Cover generation failed: {cover_error}")
+        if cover_executor is not None:
+            cover_executor.shutdown(wait=False)
+
+    if pipeline_error is not None:
+        raise pipeline_error
+
+    logger.success(f"Project processing complete: {project_id}")
+
+    # Archive project
+    if settings.archived_path is not None:
+        project.archive()
+        logger.success(f"Project {project_id} archived successfully")
+    else:
+        logger.warning("Archived path is not set, skipping archiving")
+
+    logger.info(
+        f"Project {project_id} total accumulated API cost: "
+        f"${project.total_cost:.4f}"
+    )

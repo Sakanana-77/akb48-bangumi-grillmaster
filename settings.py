@@ -93,5 +93,23 @@ class Settings(BaseSettings):
         description="Path for automatic archival. If set, completed projects will be archived to this location",
     )
 
+    # --- Optional Codex-driven post-processing ------------------------------
+    enable_srt_refine: bool = Field(
+        default=False,
+        description="Enable optional Codex-driven Traditional Chinese subtitle refinement stage between TRANSLATED and ASS_CONVERTED",
+    )
+    enable_cover_generation: bool = Field(
+        default=False,
+        description="Enable optional Codex-driven cover image stylization (runs async after DOWNLOADED, joined before archive). Skipped entirely when break_after is set.",
+    )
+    codex_executable: str = Field(
+        default="codex",
+        description="Codex CLI executable name or absolute path",
+    )
+    codex_default_timeout_secs: int = Field(
+        default=900,
+        description="Default per-invocation timeout for codex exec subprocess calls",
+    )
+
 
 settings = Settings()

@@ -32,9 +32,15 @@ class WorkflowBreakpointTests(unittest.TestCase):
         project.is_asr_completed = False
         project.is_srt_completed = False
         project.is_translated = False
+        project.is_srt_refined = False
+        project.is_cover_generated = False
         project.audio_path = Path("projects/demo/.asr/audio.opus")
         project.asr_path = Path("projects/demo/.asr/asr.json")
         project.srt_path = Path("projects/demo/video.ja.srt")
+        project.translated_path = Path("projects/demo/video.cht.srt")
+        project.refined_srt_path = Path("projects/demo/video.cht.refined.srt")
+        project.poster_path = Path("projects/demo/poster.jpg")
+        project.poster_cover_path = Path("projects/demo/poster.cover.png")
         return project
 
     def test_break_after_asr_completed_stops_before_translation(self):

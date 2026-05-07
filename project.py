@@ -24,11 +24,16 @@ AUDIO_FILE_NAME = "audio.opus"
 ASR_FILE_NAME = "asr.json"
 SRT_FILE_NAME = "video.ja.srt"
 TRANSLATED_FILE_NAME = "video.cht.srt"
+REFINED_SRT_FILE_NAME = "video.cht.refined.srt"
 ASS_FILE_NAME = "video.cht.ass"
+POSTER_FILE_NAME = "poster.jpg"
+POSTER_COVER_FILE_NAME = "poster.cover.png"
 PRE_PASS_FILE_NAME = "pre_pass.json"
+REFINE_REPORT_FILE_NAME = "report.md"
 ASR_CACHE_DIR_NAME = ".asr"
 CHUNKS_CACHE_DIR_NAME = ".chunks"
 PRE_PASS_CACHE_DIR_NAME = ".pre_pass"
+REFINE_CACHE_DIR_NAME = ".refine"
 
 
 class ProgressStage(str, Enum):
@@ -45,6 +50,7 @@ class ProgressStage(str, Enum):
     ASR_COMPLETED = "is_asr_completed"
     SRT_COMPLETED = "is_srt_completed"
     TRANSLATED = "is_translated"
+    SRT_REFINED = "is_srt_refined"
     ASS_CONVERTED = "is_ass_converted"
 
 
@@ -89,7 +95,9 @@ class Project(BaseModel):
         is_asr_completed: Whether speech recognition has been completed.
         is_srt_completed: Whether SRT subtitle file has been generated.
         is_translated: Whether translation has been completed.
+        is_srt_refined: Whether the optional Codex-driven SRT refinement has been completed.
         is_ass_converted: Whether the styled ASS subtitle file has been generated.
+        is_cover_generated: Whether the optional Codex-driven cover image has been generated.
     """
 
     id: str
@@ -109,7 +117,9 @@ class Project(BaseModel):
     is_asr_completed: bool = False
     is_srt_completed: bool = False
     is_translated: bool = False
+    is_srt_refined: bool = False
     is_ass_converted: bool = False
+    is_cover_generated: bool = False
 
     @staticmethod
     def parse_source_str(source_str: str) -> str:
@@ -512,6 +522,21 @@ class Project(BaseModel):
         return self.project_path / ASS_FILE_NAME
 
     @property
+    def refined_srt_path(self) -> Path:
+        """Get the path to the Codex-refined Traditional Chinese SRT file."""
+        return self.project_path / REFINED_SRT_FILE_NAME
+
+    @property
+    def poster_path(self) -> Path:
+        """Get the path to the source poster image downloaded by yt-dlp."""
+        return self.project_path / POSTER_FILE_NAME
+
+    @property
+    def poster_cover_path(self) -> Path:
+        """Get the path to the Codex-generated stylized cover image."""
+        return self.project_path / POSTER_COVER_FILE_NAME
+
+    @property
     def pre_pass_path(self) -> Path:
         """Get the path to the cached Gemini pre-pass briefing JSON.
 
@@ -573,6 +598,16 @@ class Project(BaseModel):
     def chunks_cache_dir(self) -> Path:
         """Get the directory for persistent per-chunk translation caches."""
         return self.project_path / CHUNKS_CACHE_DIR_NAME
+
+    @property
+    def refine_cache_dir(self) -> Path:
+        """Get the directory for refinement artifacts (report, etc.)."""
+        return self.project_path / REFINE_CACHE_DIR_NAME
+
+    @property
+    def refine_report_path(self) -> Path:
+        """Get the path to the Codex-written refinement summary report."""
+        return self.refine_cache_dir / REFINE_REPORT_FILE_NAME
 
 
 # Runtime check enum values match field names
