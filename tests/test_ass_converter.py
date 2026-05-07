@@ -61,24 +61,18 @@ class AssConverterTextCleaningTests(unittest.TestCase):
 
 class AssTimecodeTests(unittest.TestCase):
     def test_converts_srt_timecode_to_ass_pair(self):
-        start, end = _srt_timecode_to_ass(
-            "00:00:01,500 --> 00:00:02,750"
-        )
+        start, end = _srt_timecode_to_ass("00:00:01,500 --> 00:00:02,750")
         self.assertEqual(start, "0:00:01.50")
         self.assertEqual(end, "0:00:02.75")
 
     def test_strips_hour_leading_zero(self):
-        start, end = _srt_timecode_to_ass(
-            "01:23:45,678 --> 12:00:00,000"
-        )
+        start, end = _srt_timecode_to_ass("01:23:45,678 --> 12:00:00,000")
         self.assertEqual(start, "1:23:45.67")
         self.assertEqual(end, "12:00:00.00")
 
     def test_truncates_milliseconds_to_centiseconds(self):
         # 999 ms → 99 cs (Aegisub-style truncation, not rounding).
-        start, _ = _srt_timecode_to_ass(
-            "00:00:00,999 --> 00:00:01,000"
-        )
+        start, _ = _srt_timecode_to_ass("00:00:00,999 --> 00:00:01,000")
         self.assertEqual(start, "0:00:00.99")
 
     def test_rejects_invalid_timecode(self):
@@ -153,7 +147,7 @@ class AssConvertFileTests(unittest.TestCase):
         self.assertTrue(out.startswith(ASS_HEADER))
         self.assertIn("[Script Info]", out)
         self.assertIn("PlayResX: 1920", out)
-        self.assertIn("Style: Default,源泉圓體月 B,64,", out)
+        self.assertIn("Style: Default,源泉圓體月 M,64,", out)
         self.assertIn(
             "Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,你好 世界",
             out,
