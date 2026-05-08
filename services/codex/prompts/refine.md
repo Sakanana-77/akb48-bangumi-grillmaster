@@ -24,6 +24,7 @@ Rules:
 - Do not merge or split blocks.
 - Keep the block count identical to `video.cht.srt`.
 - Use `video.ja.srt` as the Japanese source-language reference, but account for ASR mistakes.
+- Avoid unsupported subject insertion: When comparing against `video.ja.srt`, remove explicit Chinese subjects such as「我 / 你 / 他 / 她 / 我們 / 大家」or specific names if they were added only for smoothness and are not stated or clearly implied by the Japanese source, immediate context, audio, visuals, or `.pre_pass/pre_pass.json`. Prefer natural subjectless Chinese when the actor is ambiguous.
 - The refined subtitle text must be Traditional Chinese. Do not leave Japanese in the subtitle text unless it is an intentional proper noun, title, service name, or quoted term that should remain untranslated.
 - Use `.pre_pass/pre_pass.json` for summary, cast, term glossary, and segment summaries.
 - Use frames only when text context is insufficient.
