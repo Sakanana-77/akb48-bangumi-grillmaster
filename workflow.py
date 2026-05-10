@@ -10,7 +10,7 @@ from pathlib import Path
 from project import Project, ProgressStage, VideoSource
 from loguru import logger
 from settings import settings
-from services.ass import convert_file as convert_srt_to_ass
+from services.finalize import convert_file as convert_srt_to_ass
 from services.codex import generate_cover, refine_subtitles
 from services.elevenlabs import ElevenLabsASR, convert_file
 from services.gemini import Gemini, GeminiTranslationError, TranslationRequest

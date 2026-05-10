@@ -2,7 +2,7 @@ import shutil
 import unittest
 from pathlib import Path
 
-from services.ass.converter import (
+from services.finalize.subtitles import (
     ASS_HEADER,
     _block_to_dialogue,
     _clean_text,

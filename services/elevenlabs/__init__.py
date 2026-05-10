@@ -15,7 +15,7 @@ def __getattr__(name: str):
 
         return ElevenLabsTranscriptionResult
     if name == "convert_file":
-        from .srt import convert_file
+        from .srt_builder import convert_file
 
         return convert_file
     raise AttributeError(name)
