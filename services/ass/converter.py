@@ -23,7 +23,7 @@ from typing import Iterable
 
 from loguru import logger
 
-from services.gemini.chunker import SrtBlock, parse_srt, serialize_srt
+from services.srt import SrtBlock, parse_srt, serialize_srt
 
 ASS_HEADER = """[Script Info]
 ScriptType: v4.00+
@@ -89,11 +89,11 @@ def _render(blocks: Iterable[SrtBlock]) -> str:
 def convert_file(
     input_path: str | Path,
     output_path: str | Path,
-    formatted_srt_path: str | Path | None = None,
+    finalized_srt_path: str | Path | None = None,
 ) -> None:
     """Read an SRT file, clean Chinese punctuation, and write a styled ASS file.
 
-    When ``formatted_srt_path`` is provided, also writes a player-friendly SRT
+    When ``finalized_srt_path`` is provided, also writes a player-friendly SRT
     with the same punctuation cleanup applied to each block's text. The SRT
     output is intended for devices that don't support ASS.
     """
@@ -108,11 +108,11 @@ def convert_file(
     output_path.write_text(ass_text, encoding="utf-8")
     logger.success(f"Converted SRT to ASS: {output_path}")
 
-    if formatted_srt_path is not None:
-        srt_out = Path(formatted_srt_path)
+    if finalized_srt_path is not None:
+        srt_out = Path(finalized_srt_path)
         cleaned_blocks = [
             b.model_copy(update={"text": _clean_text(b.text)}) for b in blocks
         ]
         srt_out.parent.mkdir(parents=True, exist_ok=True)
         srt_out.write_text(serialize_srt(cleaned_blocks), encoding="utf-8")
-        logger.success(f"Wrote formatted SRT: {srt_out}")
+        logger.success(f"Wrote finalized SRT: {srt_out}")

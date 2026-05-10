@@ -13,7 +13,7 @@ from services.gemini.assets import (
     PrePassMediaAssets,
 )
 from services.gemini.chunk_worker import translate_chunk
-from services.gemini.chunker import SrtBlock
+from services.srt import SrtBlock
 from services.gemini.pre_pass import (
     Catchphrase,
     Character,

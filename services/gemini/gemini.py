@@ -9,9 +9,10 @@ from loguru import logger
 from pydantic import BaseModel
 
 from settings import settings
+from services.srt import SrtBlock, parse_srt, serialize_srt
 from .assets import prepare_chunk_media_assets
 from .chunk_worker import translate_chunk
-from .chunker import SrtBlock, parse_srt, serialize_srt, split_into_chunks
+from .chunker import split_into_chunks
 from .errors import (
     ChunkTranslationError,
     GeminiTranslationError,

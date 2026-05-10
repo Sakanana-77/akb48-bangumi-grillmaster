@@ -8,7 +8,7 @@ os.environ.setdefault("DEEPSEEK_API_KEY", "test-key")
 
 from services.gemini.errors import ChunkFixError
 from services.gemini.chunk_worker import _validate_output
-from services.gemini.chunker import SrtBlock
+from services.srt import SrtBlock
 from services.llm import chunk_fix
 
 

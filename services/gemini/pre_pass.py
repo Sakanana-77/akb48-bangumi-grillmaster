@@ -9,8 +9,8 @@ from loguru import logger
 from pydantic import BaseModel
 
 from settings import settings
+from services.srt import SrtBlock
 from .assets import media_refs_to_parts, prepare_pre_pass_media_assets
-from .chunker import SrtBlock
 from .cost import calculate_cost
 from .errors import PrePassError
 from .instructions import (

@@ -15,8 +15,8 @@ from services.llm.chunk_fix import (
     canonicalize_by_timecode_subset,
     fix_chunk_structure,
 )
+from services.srt import SrtBlock, parse_srt
 from .assets import ChunkMediaAssets, media_refs_to_parts
-from .chunker import SrtBlock, parse_srt
 from .cost import calculate_cost
 from .errors import ChunkFixError, ChunkTranslationError
 from .instructions import chunk_instruction

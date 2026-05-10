@@ -1,6 +1,6 @@
 """Post-translation SRT normalization helpers."""
 
-from .chunker import SrtBlock
+from services.srt import SrtBlock
 
 
 def normalize_translated_blocks(blocks: list[SrtBlock]) -> list[SrtBlock]:

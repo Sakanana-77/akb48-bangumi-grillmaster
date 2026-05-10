@@ -1,60 +1,8 @@
-"""Pure functions for parsing, splitting, and serializing SRT subtitle blocks."""
+"""Gemini-specific chunk splitting for SRT translation."""
 
 import math
-import re
-from pydantic import BaseModel
 
-
-class SrtBlock(BaseModel):
-    """A single SRT subtitle entry: index, timecode, and text body."""
-
-    index: int
-    timecode: str
-    text: str
-
-    @property
-    def raw(self) -> str:
-        """Serialize this block back to SRT format (without trailing blank line)."""
-        return f"{self.index}\n{self.timecode}\n{self.text}"
-
-    @property
-    def char_count(self) -> int:
-        """Character count of the raw representation; used for chunk sizing."""
-        return len(self.raw)
-
-
-_BLOCK_SEPARATOR = re.compile(r"\r?\n\r?\n")
-_TIMECODE_LINE = re.compile(
-    r"^\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}$"
-)
-
-
-def parse_srt(srt_text: str) -> list[SrtBlock]:
-    """Parse raw SRT text into a list of SrtBlock.
-
-    Tolerates trailing whitespace and CRLF line endings. Empty blocks (no text
-    body) are preserved with an empty text field.
-    """
-    blocks: list[SrtBlock] = []
-    for raw_block in _BLOCK_SEPARATOR.split(srt_text.strip()):
-        lines = raw_block.strip().splitlines()
-        if len(lines) < 2:
-            continue
-        try:
-            index = int(lines[0].strip())
-        except ValueError:
-            raise ValueError(f"Invalid SRT index line: {lines[0]!r}")
-        timecode = lines[1].strip()
-        if not _TIMECODE_LINE.match(timecode):
-            raise ValueError(f"Invalid SRT timecode line: {timecode!r}")
-        text = "\n".join(lines[2:])
-        blocks.append(SrtBlock(index=index, timecode=timecode, text=text))
-    return blocks
-
-
-def serialize_srt(blocks: list[SrtBlock]) -> str:
-    """Serialize a list of SrtBlock back to SRT text with blank-line separators."""
-    return "\n\n".join(b.raw for b in blocks) + "\n"
+from services.srt import SrtBlock
 
 
 def split_into_chunks(

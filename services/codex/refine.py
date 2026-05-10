@@ -2,57 +2,28 @@
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
 from pathlib import Path
 
 from loguru import logger
 
 from project import Project
+from services.srt import SrtBlock, parse_srt
 from .client import run_codex_exec
 
 
 _PROMPT = (Path(__file__).parent / "prompts" / "refine.md").read_text(
     encoding="utf-8"
 )
-_BLOCK_SEPARATOR = re.compile(r"\n\s*\n")
 
 
 class RefinementValidationError(RuntimeError):
     """Raised when the refined SRT structurally diverges from the source."""
 
 
-@dataclass(frozen=True)
-class _SrtBlock:
-    index: int
-    timecode: str
-    text: str
-
-
-def _parse_srt(path: Path) -> list[_SrtBlock]:
+def _parse_srt(path: Path) -> list[SrtBlock]:
+    # utf-8-sig tolerates a UTF-8 BOM that Codex sometimes writes.
     raw = path.read_text(encoding="utf-8-sig").strip()
-    if not raw:
-        return []
-
-    blocks: list[_SrtBlock] = []
-    for position, chunk in enumerate(_BLOCK_SEPARATOR.split(raw), start=1):
-        lines = chunk.splitlines()
-        if len(lines) < 2:
-            raise ValueError(f"block {position} has fewer than 2 lines")
-        try:
-            index = int(lines[0].strip())
-        except ValueError as exc:
-            raise ValueError(
-                f"block {position} has invalid index: {lines[0]!r}"
-            ) from exc
-        timecode = lines[1].strip()
-        if "-->" not in timecode:
-            raise ValueError(
-                f"block {index} has invalid timecode: {timecode!r}"
-            )
-        text = "\n".join(lines[2:]).strip()
-        blocks.append(_SrtBlock(index=index, timecode=timecode, text=text))
-    return blocks
+    return parse_srt(raw) if raw else []
 
 
 def _validate_refined_srt(source: Path, refined: Path) -> list[str]:

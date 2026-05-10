@@ -10,6 +10,8 @@ from typing import Any
 
 from loguru import logger
 
+from services.srt import SrtBlock, format_timecode, serialize_srt
+
 
 JAPANESE_HARD_PUNCTUATION = "。！？?!"
 JAPANESE_SOFT_PUNCTUATION = "、，,：:；;"
@@ -723,13 +725,20 @@ def _can_merge_into_block(
 def _render_srt(
     blocks: list[SubtitleBlock], options: SrtFormatOptions
 ) -> str:
-    lines: list[str] = []
+    srt_blocks: list[SrtBlock] = []
     for index, block in enumerate(blocks, start=1):
-        lines.append(str(index))
-        lines.append(f"{_format_time(block.start)} --> {_format_time(block.end)}")
-        lines.extend(_render_block_text(block, options))
-        lines.append("")
-    return "\n".join(lines).rstrip() + "\n"
+        text_lines = _render_block_text(block, options)
+        srt_blocks.append(
+            SrtBlock(
+                index=index,
+                timecode=(
+                    f"{format_timecode(block.start)} --> "
+                    f"{format_timecode(block.end)}"
+                ),
+                text="\n".join(text_lines),
+            )
+        )
+    return serialize_srt(srt_blocks)
 
 
 def _render_block_text(
@@ -920,12 +929,3 @@ def _block_text_length(block: SubtitleBlock) -> int:
     return sum(len(item.text) for item in block.utterances)
 
 
-def _format_time(seconds: float) -> str:
-    millis = max(0, round(seconds * 1000))
-    hours = millis // 3_600_000
-    millis %= 3_600_000
-    minutes = millis // 60_000
-    millis %= 60_000
-    secs = millis // 1000
-    millis %= 1000
-    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"

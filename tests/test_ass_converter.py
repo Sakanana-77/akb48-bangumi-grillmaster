@@ -9,7 +9,7 @@ from services.ass.converter import (
     _srt_timecode_to_ass,
     convert_file,
 )
-from services.gemini.chunker import SrtBlock
+from services.srt import SrtBlock
 
 
 class AssConverterTextCleaningTests(unittest.TestCase):
@@ -216,11 +216,11 @@ class AssConvertFileTests(unittest.TestCase):
         convert_file(srt_path, ass_path)
         self.assertTrue(ass_path.exists())
 
-    def test_convert_file_writes_formatted_srt_when_path_given(self):
+    def test_convert_file_writes_finalized_srt_when_path_given(self):
         tmp = self._make_temp_dir()
         srt_path = tmp / "input.srt"
         ass_path = tmp / "output.ass"
-        formatted_path = tmp / "output.formatted.srt"
+        finalized_path = tmp / "output.finalized.srt"
 
         srt_path.write_text(
             "1\n"
@@ -237,12 +237,12 @@ class AssConvertFileTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-        convert_file(srt_path, ass_path, formatted_srt_path=formatted_path)
+        convert_file(srt_path, ass_path, finalized_srt_path=finalized_path)
 
         self.assertTrue(ass_path.exists())
-        self.assertTrue(formatted_path.exists())
+        self.assertTrue(finalized_path.exists())
 
-        out = formatted_path.read_text(encoding="utf-8")
+        out = finalized_path.read_text(encoding="utf-8")
         # Standard SRT structure: index, timecode, text, blank-line separator,
         # trailing newline.
         self.assertEqual(
@@ -260,11 +260,11 @@ class AssConvertFileTests(unittest.TestCase):
             "真的嗎？太好了！\n",
         )
 
-    def test_convert_file_skips_formatted_srt_by_default(self):
+    def test_convert_file_skips_finalized_srt_by_default(self):
         tmp = self._make_temp_dir()
         srt_path = tmp / "input.srt"
         ass_path = tmp / "output.ass"
-        formatted_path = tmp / "output.formatted.srt"
+        finalized_path = tmp / "output.finalized.srt"
 
         srt_path.write_text(
             "1\n00:00:00,000 --> 00:00:01,000\n你好。\n",
@@ -274,21 +274,21 @@ class AssConvertFileTests(unittest.TestCase):
         convert_file(srt_path, ass_path)
 
         self.assertTrue(ass_path.exists())
-        self.assertFalse(formatted_path.exists())
+        self.assertFalse(finalized_path.exists())
 
-    def test_convert_file_creates_formatted_srt_parent_directory(self):
+    def test_convert_file_creates_finalized_srt_parent_directory(self):
         tmp = self._make_temp_dir()
         srt_path = tmp / "input.srt"
         ass_path = tmp / "output.ass"
-        formatted_path = tmp / "nested" / "deep" / "out.formatted.srt"
+        finalized_path = tmp / "nested" / "deep" / "out.finalized.srt"
 
         srt_path.write_text(
             "1\n00:00:00,000 --> 00:00:01,000\n你好。\n",
             encoding="utf-8",
         )
 
-        convert_file(srt_path, ass_path, formatted_srt_path=formatted_path)
-        self.assertTrue(formatted_path.exists())
+        convert_file(srt_path, ass_path, finalized_srt_path=finalized_path)
+        self.assertTrue(finalized_path.exists())
 
 
 if __name__ == "__main__":

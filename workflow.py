@@ -104,7 +104,7 @@ def process_project(
     5. Perform automatic speech recognition (ASR) and write source SRT
     6. Translate subtitles using Gemini
     7. Refine Traditional Chinese subtitles via Codex (optional)
-    8. Convert refined/translated SRT into a styled ASS subtitle file
+    8. Finalize: emit styled ASS + cleaned SRT from refined/translated SRT
     9. Wait for cover image generation, then archive (optional)
 
     Each stage is skipped if it has already been completed (idempotent).
@@ -303,9 +303,9 @@ def process_project(
         else:
             logger.debug("Stage skipped: SRT refinement disabled")
 
-        # Process ASS conversion
-        if not project.is_ass_converted:
-            logger.info(f"Stage: Converting SRT to ASS for {project_id}")
+        # Finalize: produce ASS + SRT outputs together
+        if not project.is_finalized:
+            logger.info(f"Stage: Finalizing subtitles for {project_id}")
             srt_source = (
                 project.refined_srt_path
                 if project.refined_srt_path.exists()
@@ -314,14 +314,14 @@ def process_project(
             convert_srt_to_ass(
                 srt_source,
                 project.ass_path,
-                formatted_srt_path=project.formatted_srt_path,
+                finalized_srt_path=project.finalized_srt_path,
             )
-            project.mark_progress(ProgressStage.ASS_CONVERTED)
-            logger.success("Stage complete: ASS generated")
+            project.mark_progress(ProgressStage.FINALIZED)
+            logger.success("Stage complete: Finalized (ASS + SRT)")
         else:
-            logger.debug("Stage skipped: ASS already generated")
+            logger.debug("Stage skipped: Already finalized")
         if _should_stop_after_stage(
-            project_id, break_after, ProgressStage.ASS_CONVERTED
+            project_id, break_after, ProgressStage.FINALIZED
         ):
             return
 

@@ -100,7 +100,7 @@ class Settings(BaseSettings):
     # --- Optional Codex-driven post-processing ------------------------------
     enable_srt_refine: bool = Field(
         default=False,
-        description="Enable optional Codex-driven Traditional Chinese subtitle refinement stage between TRANSLATED and ASS_CONVERTED",
+        description="Enable optional Codex-driven Traditional Chinese subtitle refinement stage between TRANSLATED and FINALIZED",
     )
     enable_cover_generation: bool = Field(
         default=False,

@@ -9,7 +9,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from services.media import MediaProcessor, TimeRange
-from .chunker import SrtBlock
+from services.srt import SrtBlock
 
 
 class LocalMediaRef(BaseModel):

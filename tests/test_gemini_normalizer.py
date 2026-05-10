@@ -1,6 +1,6 @@
 import unittest
 
-from services.gemini.chunker import SrtBlock
+from services.srt import SrtBlock
 from services.gemini.normalizer import normalize_translated_blocks
 
 

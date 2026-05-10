@@ -11,7 +11,7 @@ from services.gemini.assets import (
     prepare_chunk_media_assets,
     prepare_pre_pass_media_assets,
 )
-from services.gemini.chunker import SrtBlock
+from services.srt import SrtBlock
 
 
 class GeminiAssetsTests(unittest.TestCase):

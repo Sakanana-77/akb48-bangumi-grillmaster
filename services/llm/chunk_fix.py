@@ -21,7 +21,7 @@ from openai import AsyncOpenAI
 
 from settings import settings
 from services.gemini.errors import ChunkFixError
-from services.gemini.chunker import SrtBlock, parse_srt, serialize_srt
+from services.srt import SrtBlock, parse_srt, serialize_srt
 from .instructions import chunk_fix_instruction
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"

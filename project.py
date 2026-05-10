@@ -25,7 +25,7 @@ ASR_FILE_NAME = "asr.json"
 SRT_FILE_NAME = "video.ja.srt"
 TRANSLATED_FILE_NAME = "video.cht.srt"
 REFINED_SRT_FILE_NAME = "video.cht.refined.srt"
-FORMATTED_SRT_FILE_NAME = "video.cht.formatted.srt"
+FINALIZED_SRT_FILE_NAME = "video.cht.finalized.srt"
 ASS_FILE_NAME = "video.cht.ass"
 POSTER_FILE_NAME = "poster.jpg"
 POSTER_COVER_FILE_NAME = "poster.cover.png"
@@ -52,7 +52,7 @@ class ProgressStage(str, Enum):
     SRT_COMPLETED = "is_srt_completed"
     TRANSLATED = "is_translated"
     SRT_REFINED = "is_srt_refined"
-    ASS_CONVERTED = "is_ass_converted"
+    FINALIZED = "is_finalized"
 
 
 class VideoSource(str, Enum):
@@ -97,7 +97,7 @@ class Project(BaseModel):
         is_srt_completed: Whether SRT subtitle file has been generated.
         is_translated: Whether translation has been completed.
         is_srt_refined: Whether the optional Codex-driven SRT refinement has been completed.
-        is_ass_converted: Whether the styled ASS subtitle file has been generated.
+        is_finalized: Whether the final ASS + SRT outputs have been generated.
         is_cover_generated: Whether the optional Codex-driven cover image has been generated.
     """
 
@@ -119,7 +119,7 @@ class Project(BaseModel):
     is_srt_completed: bool = False
     is_translated: bool = False
     is_srt_refined: bool = False
-    is_ass_converted: bool = False
+    is_finalized: bool = False
     is_cover_generated: bool = False
 
     @staticmethod
@@ -529,13 +529,13 @@ class Project(BaseModel):
         return self.project_path / REFINED_SRT_FILE_NAME
 
     @property
-    def formatted_srt_path(self) -> Path:
-        """Path to the cleaned, player-friendly SRT (Netflix TC punctuation rules).
+    def finalized_srt_path(self) -> Path:
+        """Path to the finalized, player-friendly SRT (Netflix TC punctuation rules).
 
-        Generated alongside the ASS during the convert stage so devices that
+        Generated alongside the ASS during the finalize stage so devices that
         don't support ASS can still consume the same cleaned subtitles.
         """
-        return self.project_path / FORMATTED_SRT_FILE_NAME
+        return self.project_path / FINALIZED_SRT_FILE_NAME
 
     @property
     def poster_path(self) -> Path:
