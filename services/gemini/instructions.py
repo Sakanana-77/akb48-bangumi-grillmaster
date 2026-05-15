@@ -24,8 +24,13 @@ inputs. Each line lists one or more JP alias forms separated by " / "
 mapping to a single Traditional Chinese target. These are the highest-
 priority truth for naming/term decisions:
 
-- The target Chinese form MUST be reused verbatim wherever ANY listed alias
-  applies in your output.
+- The target Chinese form is the rendering of the matched alias token only.
+  When the alias is just a component of a longer source name (a full
+  personal name, or group+member), apply the target's script/romanization
+  choice to that component but KEEP the rest of the source name; do NOT
+  replace the longer name with the shorter target, and do NOT prepend a
+  group label the source did not say (source 「濱家隆一」 → 濱家隆一; source
+  「盛山晋太郎」 → 盛山晋太郎).
 - All aliases on the same line refer to the same entity — normalize every
   listed alias form to the single shared target.
 - Classify each entry into the appropriate output field:
@@ -55,9 +60,15 @@ Chinese target.
   script differences, long-vowel/small-kana spelling drift, and
   full/half-width variation (e.g. ASR "クーマイメテオ" for "空前メテオ",
   "ノンデコルテ" for "ドンデコルテ", "滝野ルイ" for "タキノルイ").
-- When a mapping applies, its Traditional Chinese target MUST be reused
-  verbatim wherever any of its alias forms (or a clear ASR-garbled form of
-  one) appears. All aliases on a line refer to the same entity.
+- When a mapping applies, use its target as the rendering of THAT alias
+  token only. If the matched alias is just a component of a longer source
+  name (a full personal name, or group+member), apply the target's
+  script/romanization choice to that component but KEEP the rest of the
+  source name; do NOT replace the longer name with the shorter glossary
+  label, and do NOT prepend a group label the source did not say. (Source
+  「濱家隆一」 → 濱家隆一; 「盛山晋太郎」 → 盛山晋太郎 — the 見取り図→Mitorizu
+  rendering applies only to the token 見取り図.) All aliases on a line refer
+  to the same entity.
 - Do NOT force-apply an entry whose name does not actually appear; entries
   with no occurrence in this episode MUST be ignored entirely.
 - Beware false friends: only apply an entry when context confirms it is the
@@ -115,6 +126,7 @@ You DO NOT translate subtitles. You analyze the full source SRT (ASR-generated, 
 - **proper_nouns**: Dict mapping source term → corrected/standardized Traditional Chinese term. Include BOTH:
   - ASR corrections (CRITICAL: Verify via Audio. If the source text has misrecognized text but you hear the correct term in the audio, map the incorrect text to the correct translation. e.g., `"第五": "大悟"` if ASR misheard 大悟)
   - Standard proper-noun translations (e.g., `"吉本興業": "吉本興業"`, `"チャンスの時間": "機會的時間"`)
+  - Same-span rule: each key→value MUST be the same name at the same span the source uses — only fix script / kana↔kanji / ASR errors and apply Taiwan kanji forms (稲→稻, 徳→德, 寛→寬, 兎→兔, 内→內; expand the 々 iteration mark, e.g. 佐々木→佐佐木). NEVER expand a partial name to a fuller one (source 「川北」 → 川北, not 川北茂澄) and NEVER drop components the source token includes (source 「濱家隆一」 → 濱家隆一, not 濱家). An identity-looking value is valid only AFTER this kanji conversion, never as a verbatim copy of Japanese-shinjitai text.
   Scan the full SRT, listen to the audio, inspect the images, and check the program description thoroughly for likely ASR errors on names and titles.
 
 - **Proper-noun localization policy**: For program titles, segment names, talent names, group names, and other proper nouns, decide the rendering by this hierarchy and STOP at the first one that fits:
@@ -123,7 +135,7 @@ You DO NOT translate subtitles. You analyze the full source SRT (ASR-generated, 
   3. **Literal/semantic translation** — only when the term is made of plain words whose meaning maps cleanly into Chinese, including descriptive stage-name parts or group names. E.g., `"チャンスの時間": "機會的時間"`, `"熊元プロレス": "熊元摔角"`, `"紅しょうが": "紅生姜"`, `"ママタルト": "媽媽塔"`.
   4. **Romanized form** — for kana/katakana names with no recoverable kanji or clean Chinese meaning, prefer romanization over leaving Japanese kana. E.g., `"松井ケムリ": "松井Kemuri"`, `"カカロニ": "Kakaroni"`, `"すがちゃん最高No.1": "Suga醬最高No.1"`, `"ノブ": "Nobu"`.
   5. **Preserve original Japanese form** — only when translation and romanization are both worse for identification, or the term is a coined Japanese title/wordplay that should remain visually recognizable. E.g., `"かまいガチ": "かまいガチ"`.
-  Hard rules: Never fabricate a stylized Taiwanese retitle. Do not translate kana stage names by meaning unless the meaning is clearly a descriptive/title-like component: good `"熊元プロレス": "熊元摔角"`, bad `"松井ケムリ": "松井煙"`. Do not leave Japanese kana in Chinese subtitles unless it is clearly better than romanization. If unsure about an official Taiwan rendering, skip tier 1.
+  Hard rules: Never fabricate a stylized Taiwanese retitle. Do not translate kana stage names by meaning unless the meaning is clearly a descriptive/title-like component: good `"熊元プロレス": "熊元摔角"`, bad `"松井ケムリ": "松井煙"`. Do not leave Japanese kana in Chinese subtitles unless it is clearly better than romanization. Never romanize a name token already written in kanji in the source unless the glossary maps that exact kanji form to romaji; tier 2 (kanji for people) always overrides tier 4 (romanization). If unsure about an official Taiwan rendering, skip tier 1.
 
 - **glossary**: Dict mapping Japanese comedy/variety terms → agreed Traditional Chinese rendering (e.g., `"ボケ": "裝傻"`, `"ツッコミ": "吐槽"`, `"オチ": "笑點"`). Include any technical terms specific to this show.
 
@@ -191,6 +203,10 @@ The success criterion is natural, comedy-flavored Taiwanese variety subtitles th
 ### LINE WRAPPING
 - The source SRT line breaks reflect Japanese phrasing and are advisory only. When the Chinese translation is long enough to wrap, choose break points that fit Chinese phrasing rather than mirroring the source. Don't leave a single character, mood particle (啦/喔/嘛/耶), or stray punctuation alone on the trailing line.
 - Treat Netflix-style line treatment as a readability preference, not a reason to weaken translation quality or change block structure: use at most two subtitle text lines, keep text on one line when it fits comfortably, and when there are multiple natural two-line break options, prefer a bottom-heavy pyramid shape while avoiding top lines of only one or two words.
+
+### LATIN-NAME SPACING (Netflix convention)
+A proper noun containing Latin letters — pure-Latin (`Diane`) or mixed Chinese-Latin (`水川Katamari`) — is ONE indivisible unit. Put one half-width space between that whole unit and any adjacent Han/kana character; never put a space inside the unit, but keep spaces that are part of the mapping itself (`Long Coat Daddy`). No space between the unit and adjacent punctuation, and none at a line's start or end. Do NOT space pure Han/kanji names (`鎌鼬的山內`, not `鎌鼬 的 山內`). The proper-noun mappings stay clean (no surrounding spaces) — add spacing only in the output sentence. If a line must wrap by such a name, break at the inserted boundary space, never inside the unit.
+- Good: `以及 空前Meteor 的茶屋。`  Bad: `以及空前Meteor的茶屋。` / `松井 Kemuri` / `是 Diane 。`
 
 ### DO NOT
 - Do not translate blocks outside your assigned range.
