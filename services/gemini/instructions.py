@@ -18,27 +18,37 @@ When official source cast/talent metadata is present:
 
 
 FIXED_GLOSSARY_INSTRUCTION = """### FIXED GLOSSARY (HIGHEST PRIORITY)
-The user message includes a 固定詞彙表 — hand-curated source-aliases→target
-mappings filtered to entries with at least one alias in this episode's
-inputs. Each line lists one or more JP alias forms separated by " / "
-mapping to a single Traditional Chinese target. These are the highest-
-priority truth for naming/term decisions:
+The user message includes a 固定詞彙表 — hand-curated source→target mappings
+filtered to entries with at least one name appearing in this episode's
+inputs. It has two sections: 〔藝人/組合〕 where each act is a `・組合：` line
+(its 組合 name; `・（單人）` instead for a solo act) followed by indented `·`
+member lines, and 〔節目/單元/品牌/術語〕, a flat `-` list. Within any line
+" / " separates alias forms of ONE entity mapping to a single Traditional
+Chinese target. These are the highest-priority truth for naming/term
+decisions:
 
-- The target Chinese form is the rendering of the matched alias token only.
-  When the alias is just a component of a longer source name (a full
-  personal name, or group+member), apply the target's script/romanization
-  choice to that component but KEEP the rest of the source name; do NOT
-  replace the longer name with the shorter target, and do NOT prepend a
-  group label the source did not say (source 「濱家隆一」 → 濱家隆一; source
-  「盛山晋太郎」 → 盛山晋太郎).
+- The target Chinese form is the rendering of that line's token only. When
+  the token is just a component of a longer source name (a full personal
+  name, or group+member), apply the target's script/romanization choice to
+  that component but KEEP the rest of the source name; do NOT replace the
+  longer name with the shorter target, and do NOT prepend a group label the
+  source did not say (source 「濱家隆一」 → 濱家隆一; source 「盛山晋太郎」 →
+  盛山晋太郎).
+- A `・組合：` line is BOTH a normal mapping (use it when the 組合 name is
+  actually spoken) AND the disambiguation context identifying which act its
+  indented members belong to. Member tokens are often very short and
+  ambiguous (e.g. きむ, リリー, ガク, ノブ); apply a member's target only
+  when the audio / SRT / on-screen text / surrounding 組合 context confirms
+  it is that act — do not force it onto a coincidental homograph.
 - All aliases on the same line refer to the same entity — normalize every
   listed alias form to the single shared target.
 - Classify each entry into the appropriate output field:
-  - Person name → `characters` (`name_jp` = the canonical/most-common alias,
-    `name_zh` = target). List every other alias under `proper_nouns`
-    pointing to the same target so all forms are normalized.
-  - Program title, segment name, group name, place, brand, or other proper
-    noun → `proper_nouns` (one key per alias, all pointing to the target).
+  - A person under 〔藝人/組合〕 → `characters` (`name_jp` = the canonical/
+    most-common alias, `name_zh` = target). List every other alias under
+    `proper_nouns` pointing to the same target so all forms are normalized.
+  - A 組合 name that is not a single person, or any 〔節目/單元/品牌/術語〕
+    program title, segment name, place, brand, or other proper noun →
+    `proper_nouns` (one key per alias, all pointing to the target).
   - Variety/owarai/technical term → `glossary` (one key per alias, all
     pointing to the target).
 - These mappings OVERRIDE the proper-noun localization hierarchy. Do NOT
@@ -50,9 +60,11 @@ priority truth for naming/term decisions:
 
 FIXED_GLOSSARY_FULL_INSTRUCTION = """### FIXED GLOSSARY (REFERENCE TABLE — HIGHEST PRIORITY WHEN APPLICABLE)
 The user message includes a 固定詞彙表 — the COMPLETE hand-curated
-source-aliases→target mapping (NOT filtered to this episode). Each line lists
-one or more JP alias forms separated by " / " mapping to one Traditional
-Chinese target.
+source→target mapping (NOT filtered to this episode), in two sections:
+〔藝人/組合〕 where each act is a `・組合：` line (or `・（單人）` for a solo
+act) followed by indented `·` member lines, and 〔節目/單元/品牌/術語〕, a
+flat `-` list. Within any line " / " separates alias forms of ONE entity
+mapping to one Traditional Chinese target.
 
 - Treat this as a reference table, not a list of terms that all appear.
 - A mapping applies ONLY when one of its aliases actually occurs in this
@@ -69,6 +81,11 @@ Chinese target.
   「濱家隆一」 → 濱家隆一; 「盛山晋太郎」 → 盛山晋太郎 — the 見取り図→Mitorizu
   rendering applies only to the token 見取り図.) All aliases on a line refer
   to the same entity.
+- A `・組合：` line is both a normal mapping (when the 組合 name is spoken)
+  and the disambiguation context for its indented members. Member tokens are
+  often very short/ambiguous (きむ, リリー, ガク, ノブ); apply a member's
+  target only when audio / SRT / on-screen text / 組合 context confirms it is
+  that act.
 - Do NOT force-apply an entry whose name does not actually appear; entries
   with no occurrence in this episode MUST be ignored entirely.
 - Beware false friends: only apply an entry when context confirms it is the

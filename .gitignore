@@ -226,3 +226,4 @@ data
 node_modules
 
 .claude/
+_migration/
