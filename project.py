@@ -8,6 +8,7 @@ and translation.
 from pydantic import BaseModel, Field
 from pathlib import Path
 from datetime import datetime
+import hashlib
 import json
 import shutil
 from enum import Enum
@@ -67,6 +68,7 @@ class VideoSource(str, Enum):
     TVER = "tver"
     ABEMA = "abema"
     YOUTUBE = "youtube"
+    LOCAL = "local"
 
 
 class SourceTalent(BaseModel):
@@ -113,6 +115,7 @@ class Project(BaseModel):
     name: str = Field(default="video")
     translation_hint: str | None = None
     parent_project_path: Path | None = None
+    local_source_path: Path | None = None
     source_metadata: SourceMetadata = Field(default_factory=SourceMetadata)
     total_cost: float = 0.0
     service_costs: dict[str, float] = Field(default_factory=dict)
@@ -148,17 +151,34 @@ class Project(BaseModel):
         Raises:
             ValueError: If the URL format is not recognized.
         """
-        # 1. Handle Bilibili (Most distinct format)
+        # 1. Handle local media files. Existing local project ids still
+        # round-trip so resumed runs do not need the original source path.
+        if source_str.startswith("local_"):
+            return source_str
+        maybe_path = Path(source_str).expanduser()
+        if maybe_path.exists() and maybe_path.is_file():
+            resolved = maybe_path.resolve()
+            digest = hashlib.sha1(
+                str(resolved).encode("utf-8")
+            ).hexdigest()[:10]
+            stem = re.sub(
+                r"[^A-Za-z0-9._-]+", "_", resolved.stem
+            ).strip("._-")
+            if not stem:
+                stem = "video"
+            return f"local_{stem}_{digest}"
+
+        # 2. Handle Bilibili (Most distinct format)
         bv_match = re.search(r"(BV[a-zA-Z0-9]+)", source_str)
         if bv_match:
             return bv_match.group(1)
 
-        # 2. Handle YouTube: already-prefixed `v=<id>` passes through unchanged
+        # 3. Handle YouTube: already-prefixed `v=<id>` passes through unchanged
         # so re-parsing a stored ID is idempotent.
         if source_str.startswith("v="):
             return source_str
 
-        # 3. Handle YouTube URLs: youtube.com/watch?v=ID, youtu.be/ID,
+        # 4. Handle YouTube URLs: youtube.com/watch?v=ID, youtu.be/ID,
         # youtube.com/shorts/ID, youtube.com/live/ID, m.youtube.com/...
         if "youtube.com" in source_str or "youtu.be" in source_str:
             parsed = urlparse(source_str)
@@ -170,7 +190,7 @@ class Project(BaseModel):
                 return f"v={parts[-1]}"
             raise ValueError(f"Invalid YouTube URL: {source_str}")
 
-        # 4. Handle URLs (Bilibili & TVer & Abema)
+        # 5. Handle URLs (Bilibili & TVer & Abema)
         # Using urlparse is safer for handling query parameters
         if (
             "bilibili.com" in source_str
@@ -188,12 +208,12 @@ class Project(BaseModel):
             except Exception:
                 pass  # Fall through to error if parsing fails
 
-        # 5. Reject unknown URLs
+        # 6. Reject unknown URLs
         # If it looks like a URL but wasn't caught above, it's invalid/unsupported
         if source_str.startswith(("https://", "http://")):
             raise ValueError(f"Invalid video source: {source_str}")
 
-        # 6. Return as Direct ID
+        # 7. Return as Direct ID
         return source_str
 
     @classmethod
@@ -223,6 +243,12 @@ class Project(BaseModel):
             JSONDecodeError: If the project file is corrupted.
         """
         id = cls.parse_source_str(source_str)
+        source_path = Path(source_str).expanduser()
+        resolved_source_path = (
+            source_path.resolve()
+            if source_path.exists() and source_path.is_file()
+            else None
+        )
         resolved_parent_path = (
             Path(parent_project_path)
             if parent_project_path is not None
@@ -238,6 +264,7 @@ class Project(BaseModel):
                 id=id,
                 translation_hint=translation_hint,
                 parent_project_path=resolved_parent_path,
+                local_source_path=resolved_source_path,
             )
 
         try:
@@ -254,6 +281,12 @@ class Project(BaseModel):
                 logger.warning(
                     f"Parent project is not supported for existing projects"
                 )
+            if (
+                resolved_source_path is not None
+                and project.local_source_path is None
+            ):
+                project.local_source_path = resolved_source_path
+                project.save()
 
             return project
         except Exception as e:
@@ -419,6 +452,9 @@ class Project(BaseModel):
         if self.id.startswith("v="):
             return VideoSource.YOUTUBE
 
+        if self.id.startswith("local_"):
+            return VideoSource.LOCAL
+
         # TVer: IDs typically start with 'ep' (episode) or 'sh' (series)
         # and contain ONLY alphanumeric characters (no hyphens/underscores).
         if self.id.startswith(("ep", "sh")) and self.id.isalnum():
@@ -446,6 +482,9 @@ class Project(BaseModel):
 
         if self.source == VideoSource.YOUTUBE:
             return f"https://www.youtube.com/watch?v={self.id[2:]}"
+
+        if self.source == VideoSource.LOCAL:
+            raise ValueError("Local video projects do not have a source URL")
 
         raise ValueError(f"Invalid video source: {self.source}")
 

@@ -179,16 +179,24 @@ def process_project(
         # Fetch metadata
         if not project.is_metadata_fetched:
             logger.info(f"Stage: Fetching metadata for {project_id}")
-            video_data = get_video_info(project.source_url)
-            project.update_from_video_info(video_data)
-            if project.source == VideoSource.TVER:
-                talents = get_tver_episode_talents(project.id)
-                if talents:
-                    project.update_from_source_talents(talents)
-            if project.source == VideoSource.ABEMA:
-                talents = get_abema_episode_talents(project.id)
-                if talents:
-                    project.update_from_source_talents(talents)
+            if project.source == VideoSource.LOCAL:
+                source_name_path = project.local_source_path or project.video_path
+                if source_name_path.exists():
+                    project.name = source_name_path.stem
+                    if project.translation_hint is None:
+                        project.translation_hint = source_name_path.stem
+                    project.save()
+            else:
+                video_data = get_video_info(project.source_url)
+                project.update_from_video_info(video_data)
+                if project.source == VideoSource.TVER:
+                    talents = get_tver_episode_talents(project.id)
+                    if talents:
+                        project.update_from_source_talents(talents)
+                if project.source == VideoSource.ABEMA:
+                    talents = get_abema_episode_talents(project.id)
+                    if talents:
+                        project.update_from_source_talents(talents)
             project.mark_progress(ProgressStage.METADATA_FETCHED)
             logger.success("Stage complete: Metadata fetched")
         else:
@@ -200,10 +208,30 @@ def process_project(
 
         # Download video
         if not project.is_downloaded:
-            logger.info(f"Stage: Downloading video for {project_id}")
-            download_video(project.source_url, project.project_path)
+            if project.source == VideoSource.LOCAL:
+                logger.info(f"Stage: Copying local video for {project_id}")
+                if (
+                    project.local_source_path is None
+                    and project.video_path.exists()
+                ):
+                    logger.info(
+                        f"Reusing existing local project video: {project.video_path}"
+                    )
+                elif project.local_source_path is None:
+                    raise ValueError(
+                        "Local project has no source file path. Re-run with "
+                        "the original local video path, or place video.mp4 in "
+                        f"{project.project_path}."
+                    )
+                else:
+                    MediaProcessor.copy_local_video(
+                        project.local_source_path, project.video_path
+                    )
+            else:
+                logger.info(f"Stage: Downloading video for {project_id}")
+                download_video(project.source_url, project.project_path)
             project.mark_progress(ProgressStage.DOWNLOADED)
-            logger.success("Stage complete: Video downloaded")
+            logger.success("Stage complete: Video ready")
         else:
             logger.debug("Stage skipped: Video already downloaded")
         if _should_stop_after_stage(
@@ -223,11 +251,16 @@ def process_project(
 
         # Process video
         if not project.is_video_processed:
-            logger.info(f"Stage: Combining video segments for {project_id}")
-            MediaProcessor.combine_videos(
-                project.downloaded_video_paths,
-                project.video_path,
-            )
+            if project.source == VideoSource.LOCAL and project.video_path.exists():
+                logger.info(
+                    f"Stage: Local video already in project layout for {project_id}"
+                )
+            else:
+                logger.info(f"Stage: Combining video segments for {project_id}")
+                MediaProcessor.combine_videos(
+                    project.downloaded_video_paths,
+                    project.video_path,
+                )
             project.mark_progress(ProgressStage.VIDEO_PROCESSED)
             logger.success("Stage complete: Video processed")
         else:

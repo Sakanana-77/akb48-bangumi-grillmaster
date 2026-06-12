@@ -748,6 +748,20 @@ def _render_block_text(
         options.include_speaker_prefix_for_dialogue
         and len({item.speaker_id for item in block.utterances}) > 1
     )
+    if use_dialogue:
+        parts: list[str] = []
+        for index, utterance in enumerate(block.utterances):
+            text = utterance.text.strip()
+            if not text:
+                continue
+            if index == 0:
+                parts.append(text)
+            else:
+                parts.append(f"{options.dialogue_prefix} {text}")
+        if not parts:
+            return []
+        return [_join_dialogue_parts(parts)]
+
     rendered: list[str] = []
     for utterance in block.utterances:
         text = utterance.text.strip()
@@ -756,11 +770,15 @@ def _render_block_text(
         for line in _wrap_text(
             text, options, max_lines=options.max_lines_per_block
         ):
-            if use_dialogue:
-                rendered.append(f"{options.dialogue_prefix}{line}")
-            else:
-                rendered.append(line)
+            rendered.append(line)
     return rendered
+
+
+def _join_dialogue_parts(parts: list[str]) -> str:
+    text = parts[0]
+    for part in parts[1:]:
+        text = f"{text}  {part}"
+    return text
 
 
 def _rendered_line_count(

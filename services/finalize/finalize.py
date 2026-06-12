@@ -60,6 +60,7 @@ _FW_PUNCT_SPACE = re.compile(r"[ \t　]*([，、；。：！？])[ \t　]*")
 _SPEAKER_DASH = re.compile(
     r"^[ \t　]*[-‐-―−－][ \t　]*"
 )
+_NORMALIZED_SPEAKER_DASH = re.compile(r"^-\s*")
 _SRT_TIMECODE = re.compile(
     r"^\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*"
     r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*$"
@@ -73,6 +74,15 @@ _CJK_RE = re.compile(
     r"[ぁ-ゖァ-ヺ㐀-䶿一-鿿豈-﫿]"
 )
 _HAS_LATIN_RE = re.compile(r"[A-Za-z]")
+_PURE_LATIN_PHRASE_BOUNDARY_SPACE = re.compile(
+    r"(^|[\u3041-\u3096\u30a1-\u30fa\u3400-\u4dbf"
+    r"\u4e00-\u9fff\uf900-\ufaff])"
+    r"[ \t]+"
+    r"([A-Za-z0-9](?:[A-Za-z0-9 .&'’/-]*[A-Za-z0-9])?)"
+    r"[ \t]+"
+    r"($|[\u3041-\u3096\u30a1-\u30fa\u3400-\u4dbf"
+    r"\u4e00-\u9fff\uf900-\ufaff])"
+)
 
 
 def _side_space(neighbor: str, had_ws: bool) -> str:
@@ -230,13 +240,60 @@ def _clean_line(line: str) -> str:
     line = _ELLIPSIS_RUN.sub("…", line)
     line = _QUOTE_TAIL_PUNCT.sub("", line)
     line = _FW_PUNCT_SPACE.sub(r"\1", line)
+    line = _PURE_LATIN_PHRASE_BOUNDARY_SPACE.sub(r"\1\2\3", line)
     line = line.replace("。", "")
     line = line.replace("，", " ")
     return line
 
 
+def _join_cleaned_lines(lines: list[str]) -> str:
+    non_empty = [line.strip() for line in lines if line.strip()]
+    has_dialogue_continuation = any(
+        line.startswith("-") and not line.startswith("--")
+        for line in non_empty[1:]
+    )
+    normalized: list[str] = []
+    for index, stripped in enumerate(non_empty):
+        is_dialogue_line = stripped.startswith("-")
+        text = _NORMALIZED_SPEAKER_DASH.sub("", stripped).strip()
+        if index == 0 and has_dialogue_continuation:
+            normalized.append(text if is_dialogue_line else stripped)
+        elif is_dialogue_line:
+            normalized.append(
+                f"- {text}" if has_dialogue_continuation else text
+            )
+        else:
+            normalized.append(stripped)
+
+    if not normalized:
+        return ""
+
+    text = normalized[0]
+    for part in normalized[1:]:
+        if part.startswith("- "):
+            text = f"{text}  {part}"
+        elif (
+            text
+            and part
+            and re.match(r"[A-Za-z0-9]", text[-1])
+            and re.match(r"[A-Za-z0-9]", part[0])
+        ):
+            text = f"{text} {part}"
+        else:
+            text = f"{text}{part}"
+    return text
+
+
 def _clean_text(text: str) -> str:
-    return "\n".join(_clean_line(line) for line in text.split("\n"))
+    return _join_cleaned_lines(
+        [_clean_line(line) for line in text.split("\n")]
+    )
+
+
+def _space_latin_names_multiline(
+    text: str, space_latin_names: Callable[[str], str]
+) -> str:
+    return "\n".join(space_latin_names(line) for line in text.split("\n"))
 
 
 def _format_ass_time(h: str, m: str, s: str, ms: str) -> str:
@@ -290,7 +347,13 @@ def finalize_and_export(
         _load_latin_name_units(pre_pass_path) + _curated_name_units()
     )
     blocks = [
-        block.model_copy(update={"text": space_latin_names(block.text)})
+        block.model_copy(
+            update={
+                "text": _space_latin_names_multiline(
+                    block.text, space_latin_names
+                )
+            }
+        )
         for block in blocks
     ]
     ass_text = _render(blocks)

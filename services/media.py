@@ -10,6 +10,7 @@ import ffmpeg
 import subprocess
 import tempfile
 import os
+import shutil
 from loguru import logger
 from pydantic import BaseModel
 
@@ -62,6 +63,18 @@ class MediaProcessor:
         except Exception as e:
             logger.error(f"Failed to extract audio from '{input_file}': {e}")
             raise
+
+    @staticmethod
+    def copy_local_video(input_file: Path, output_file: Path) -> Path:
+        """Copy a user-provided local media file into the project layout."""
+        logger.info(f"Copying local video: {input_file} -> {output_file}")
+        if not input_file.exists() or not input_file.is_file():
+            raise FileNotFoundError(f"Local video file not found: {input_file}")
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        if input_file.resolve() != output_file.resolve():
+            shutil.copy2(input_file, output_file)
+        logger.success(f"Copied local video to: {output_file}")
+        return output_file
 
     @staticmethod
     def combine_videos(input_files: list[Path], output_file: Path) -> None:

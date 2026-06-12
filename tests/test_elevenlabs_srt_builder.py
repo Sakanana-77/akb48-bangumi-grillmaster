@@ -32,6 +32,23 @@ class ElevenLabsSrtTests(unittest.TestCase):
         self.addCleanup(lambda: shutil.rmtree(path, ignore_errors=True))
         return path
 
+    def test_dialogue_uses_single_line_second_speaker_dash(self):
+        payload = {
+            "words": [
+                word("What", 0.0, 0.2, "speaker_0"),
+                word("now?", 0.2, 0.4, "speaker_0"),
+                word("Noodles.", 0.42, 0.7, "speaker_1"),
+            ]
+        }
+
+        srt = _convert_payload_with_options(
+            payload, SrtFormatOptions(text_join_language="en")
+        )
+
+        self.assertIn("What now?  - Noodles.", srt)
+        self.assertNotIn("\n-What now?", srt)
+        self.assertNotIn("\n- What now?", srt)
+
     def test_splits_japanese_hard_punctuation(self):
         payload = {
             "words": [

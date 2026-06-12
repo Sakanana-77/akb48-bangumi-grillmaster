@@ -22,7 +22,7 @@ def process(
     source_str: Annotated[
         str,
         typer.Argument(
-            help="Video source, id or url (e.g., 'BV1ZArvBaEqL', 'https://www.bilibili.com/video/BV1ZArvBaEqL', 'https://youtu.be/dQw4w9WgXcQ', 'v=dQw4w9WgXcQ').",
+            help="Video source, id, url, or local media path (e.g., 'BV1ZArvBaEqL', 'https://www.bilibili.com/video/BV1ZArvBaEqL', 'https://youtu.be/dQw4w9WgXcQ', 'v=dQw4w9WgXcQ', './episode.mp4').",
             show_default=False,
         ),
     ],
@@ -93,11 +93,11 @@ def process(
         ),
     ] = False,
 ) -> None:
-    """Submit and process a online video for captioning and translation.
+    """Submit and process an online or local video for captioning and translation.
 
     This command will:
     1. Create a new project with the given video source
-    2. Download the video from source
+    2. Download the video from source, or copy a local media file
     3. Extract audio and generate transcription
     4. Translate subtitles to target language
 

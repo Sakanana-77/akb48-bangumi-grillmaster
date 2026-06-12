@@ -1,10 +1,11 @@
 import unittest
+import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import workflow as workflow_module
 import project as project_module
-from project import Project
+from project import Project, VideoSource
 from services.elevenlabs.asr import ElevenLabsTranscriptionResult
 from services.ytdlp.info import AbemaTalent, TVerTalent, YtDlpVideoInfo
 
@@ -13,7 +14,7 @@ class WorkflowBreakpointTests(unittest.TestCase):
     def _make_temp_dir(self) -> Path:
         base = Path(__file__).resolve().parents[1] / "tmp_test_artifacts"
         base.mkdir(parents=True, exist_ok=True)
-        path = base / "tmp_workflow_breakpoints"
+        path = base / f"tmp_workflow_breakpoints_{uuid.uuid4().hex}"
         import shutil
 
         shutil.rmtree(path, ignore_errors=True)
@@ -223,6 +224,46 @@ class WorkflowBreakpointTests(unittest.TestCase):
         self.assertEqual(
             loaded.source_metadata.talents[0].name,
             "渡部健（アンジャッシュ）",
+        )
+
+
+    def test_local_project_copies_video_without_ytdlp(self):
+        project = MagicMock()
+        project.id = "local_demo_123"
+        project.source = VideoSource.LOCAL
+        project.local_source_path = Path("D:/input/demo.mp4")
+        project.video_path = Path("projects/local_demo_123/video.mp4")
+        project.project_path = Path("projects/local_demo_123")
+        project.translation_hint = None
+        project.is_metadata_fetched = False
+        project.is_downloaded = False
+        project.is_video_processed = False
+        project.is_cover_generated = False
+
+        with (
+            patch.object(
+                workflow_module.Project, "from_source_str", return_value=project
+            ),
+            patch.object(workflow_module, "get_video_info") as get_video_info,
+            patch.object(workflow_module, "download_video") as download_video,
+            patch.object(workflow_module.MediaProcessor, "copy_local_video")
+            as copy_local_video,
+        ):
+            workflow_module.process_project(
+                "local_demo_123",
+                break_after=workflow_module.ProgressStage.DOWNLOADED,
+            )
+
+        get_video_info.assert_not_called()
+        download_video.assert_not_called()
+        copy_local_video.assert_called_once_with(
+            project.local_source_path, project.video_path
+        )
+        project.mark_progress.assert_any_call(
+            workflow_module.ProgressStage.METADATA_FETCHED
+        )
+        project.mark_progress.assert_any_call(
+            workflow_module.ProgressStage.DOWNLOADED
         )
 
 

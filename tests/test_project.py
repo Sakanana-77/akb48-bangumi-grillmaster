@@ -1,6 +1,7 @@
 import json
 import shutil
 import unittest
+import uuid
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,7 +14,7 @@ class ProjectTests(unittest.TestCase):
     def _make_temp_dir(self) -> Path:
         base = Path(__file__).resolve().parents[1] / "tmp_test_artifacts"
         base.mkdir(parents=True, exist_ok=True)
-        path = base / "tmp_project"
+        path = base / f"tmp_project_{uuid.uuid4().hex}"
         shutil.rmtree(path, ignore_errors=True)
         path.mkdir(parents=True, exist_ok=True)
         self.addCleanup(lambda: shutil.rmtree(path, ignore_errors=True))
@@ -177,6 +178,48 @@ class SourceParsingTests(unittest.TestCase):
         self.assertEqual(
             Project(id="90-979_s1_p360").source, VideoSource.ABEMA
         )
+
+    def test_parse_local_video_path(self):
+        root = (
+            Path(__file__).resolve().parents[1]
+            / "tmp_test_artifacts"
+            / "tmp_local_source_parse"
+        )
+        shutil.rmtree(root, ignore_errors=True)
+        root.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+        video_path = root / "sample video.mp4"
+        video_path.write_bytes(b"not really a video")
+
+        project_id = Project.parse_source_str(str(video_path))
+
+        self.assertTrue(project_id.startswith("local_sample_video_"))
+        self.assertEqual(Project(id=project_id).source, VideoSource.LOCAL)
+
+    def test_local_project_persists_source_path(self):
+        root = (
+            Path(__file__).resolve().parents[1]
+            / "tmp_test_artifacts"
+            / "tmp_local_project_root"
+        )
+        source_root = (
+            Path(__file__).resolve().parents[1]
+            / "tmp_test_artifacts"
+            / "tmp_local_source_project"
+        )
+        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(source_root, ignore_errors=True)
+        root.mkdir(parents=True, exist_ok=True)
+        source_root.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+        self.addCleanup(lambda: shutil.rmtree(source_root, ignore_errors=True))
+        video_path = source_root / "episode.mkv"
+        video_path.write_bytes(b"demo")
+
+        with patch.object(project_module, "PROJECT_ROOT_NAME", str(root)):
+            project = Project.from_source_str(str(video_path))
+
+        self.assertEqual(project.local_source_path, video_path.resolve())
 
 
 if __name__ == "__main__":

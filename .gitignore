@@ -217,6 +217,7 @@ __marimo__/
 
 # Repo
 projects/
+tmp_test_artifacts/
 cookies.txt
 _test*
 

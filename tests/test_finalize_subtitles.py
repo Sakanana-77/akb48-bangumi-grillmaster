@@ -17,6 +17,28 @@ from services.srt import SrtBlock
 
 
 class AssConverterTextCleaningTests(unittest.TestCase):
+    def test_joins_wrapped_lines(self):
+        self.assertEqual(
+            _clean_text("This is a very long\nsubtitle line"),
+            "This is a very long subtitle line",
+        )
+
+    def test_formats_dialogue_on_one_line(self):
+        self.assertEqual(
+            _clean_text("- What do you want?\n- I want noodles"),
+            "What do you want?  - I want noodles",
+        )
+
+    def test_removes_single_line_speaker_dash(self):
+        self.assertEqual(_clean_text("- Good night"), "Good night")
+
+    def test_removes_spaces_around_pure_latin_phrases(self):
+        self.assertEqual(_clean_text("我喜歡 Team 8 的表演"), "我喜歡Team 8的表演")
+        self.assertEqual(_clean_text("看到 AKB48 了"), "看到AKB48了")
+
+    def test_keeps_internal_latin_phrase_spacing(self):
+        self.assertEqual(_clean_text("Team 8"), "Team 8")
+
     def test_preserves_mid_sentence_comma(self):
         # Netflix TC: keep mid-sentence ，
         self.assertEqual(_clean_text("你好，今天天氣不錯"), "你好，今天天氣不錯")
