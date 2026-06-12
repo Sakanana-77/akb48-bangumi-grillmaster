@@ -1,76 +1,247 @@
-# Bangumi Grillmaster Simplified Chinese Edition
+# Bangumi GrillMaster 简体中文版
 
-基于 elishahung/bangumi-grillmaster 修改的简体中文版本，针对 AKB48、坂道系及日系偶像综艺进行了专项优化。
+当前版本：v0.2.0  
+更新日期：2026-06-12
 
-## 项目特色
+## 更新记录
 
-### 简体中文字幕输出
+- 2026-06-03：v0.1.0，创建本简体中文 Fork，基于原项目调整为面向简体中文字幕制作的个人化版本。
+- 2026-06-12：v0.2.0，新增读取本地视频文件的处理流程；优化最终字幕输出格式。
 
-* 默认输出中国大陆简体中文字幕
-* 去除繁体中文专用规则
-* 优化大陆用户阅读习惯
-* 支持繁体内容自动转换为简体
+Bangumi GrillMaster 是一个面向日语综艺、番组和网络视频的自动字幕制作工具。它可以下载在线视频，自动抽取音频、进行语音识别、翻译成中文，并导出可播放的 SRT / ASS 字幕。
 
-### 偶像综艺专项优化
+本仓库是在原项目基础上做的个人化改造版，重点优化了日语节目、偶像综艺、AKB48 相关内容、固定译名、中文排版和最终字幕格式。
 
-* AKB48 固定译名表
-* 坂道系成员译名优化
-* 偶像综艺常用术语优化
-* 成员昵称识别与统一
-* 针对 SHOWROOM、综艺节目、直播切片优化翻译风格
+## 功能特点
 
-### 智能翻译流程
+- 支持 Bilibili、TVer、ABEMA、YouTube 等 yt-dlp 可处理的视频来源。
+- 本 Fork 新增：支持读取本地视频文件，适合无法用 yt-dlp 下载的视频站点。
+- 使用 ElevenLabs 进行日语语音识别，生成源语言 SRT。
+- 使用 Gemini 进行 pre-pass 分析和分块翻译。
+- 可选使用 Codex 进行字幕润色、固定词表校对和封面生成。
+- 支持固定译名、人物名、节目名、常用梗和专有名词的统一处理。
+- 最终导出 ASS 字幕和清理后的 SRT 字幕。
+- 支持断点续跑，失败后可以从已完成阶段继续。
 
-结合音频、视频画面与上下文进行多模态翻译，而不仅仅依赖字幕文本。
+## 字幕输出格式优化
 
-* ElevenLabs Scribe v2 日语语音识别
-* Gemini 多模态翻译
-* DeepSeek 自动修复字幕结构错误
-* 支持断点续跑（Resume）
+v0.2.0 对最终字幕输出做了进一步清理，优化了长句换行、对话横线、单句前缀横线，以及英文词组前后多余空格等问题，让导出的 SRT / ASS 更适合直接观看。
 
----
+## 工作流程
 
-## 与原版的主要区别
+```text
+视频 URL / 视频 ID / 本地视频文件
+    ↓
+下载视频或复制本地视频
+    ↓
+整理为项目内 video.mp4
+    ↓
+使用 FFmpeg 抽取音频
+    ↓
+ElevenLabs ASR 生成日语字幕
+    ↓
+Gemini pre-pass 分析人物、语境、译名和分段摘要
+    ↓
+Gemini 分块翻译字幕
+    ↓
+可选：Codex 润色字幕
+    ↓
+可选：Codex 固定词表校对
+    ↓
+最终清理并导出 ASS / SRT
+    ↓
+可选：归档和打包成品
+```
 
-| 项目   | 原版     | 本 Fork             |
-| ---- | ------ | ------------------ |
-| 输出语言 | 繁体中文   | 简体中文               |
-| 主要对象 | 日本综艺   | AKB48 / 坂道系 / 偶像综艺 |
-| 译名规则 | 台湾习惯   | 中国大陆习惯             |
-| 字幕风格 | 繁中综艺风格 | 简中字幕组风格            |
-| 标点规则 | 原版规则   | 自定义大陆字幕规则          |
+## 环境要求
 
----
+- Python 3.13+
+- FFmpeg，并确保 `ffmpeg` / `ffprobe` 已加入 PATH
+- ElevenLabs API Key
+- Gemini API Key
+- 可选：Codex CLI / Gemini CLI，用于额外润色或 pre-pass
+- 可选：cookies.txt，用于需要登录状态的视频站点
 
-## 技术栈
+## 安装
 
-### ASR（语音识别）
+推荐使用 uv：
 
-使用 ElevenLabs Scribe v2。
+```bash
+uv sync
+```
 
-对于多人同时说话、吐槽与插话频繁的综艺节目识别效果优秀，能够较好区分不同发言内容。
+如果不使用 uv，也可以安装到当前 Python 环境：
 
-### 翻译
+```bash
+pip install -e .
+```
 
-经过测试，目前 Gemini Flash 系列对于日本综艺、偶像节目及直播内容的语气把握最自然。
+## 使用方式
 
-为保证字幕结构稳定性，项目采用两阶段翻译流程：
+如果已经把 `scripts/` 加入 PATH，可以直接使用：
 
-1. Pre-pass 全片分析
-2. Chunk 并发翻译
-3. DeepSeek 自动修复结构错误
-4. 最终组装输出
+```bash
+grill <视频来源> [翻译提示]
+```
 
-除了音频内容外，还会分析视频截图，辅助识别：
+也可以直接运行：
 
-* 人物身份
-* 场景变化
-* 道具信息
-* 画面文字
+```bash
+python main.py <视频来源> [翻译提示]
+```
 
-从而提升翻译准确率。
+`视频来源` 可以是：
 
----
+- Bilibili BV 号
+- TVer / ABEMA / YouTube URL
+- YouTube 的 `v=xxxx` 格式
+- 本地视频文件路径，例如 `.\episode.mp4`
+
+`翻译提示` 是可选参数。建议填写节目名、集数、出演者、系列名或你希望翻译时参考的背景信息。
+
+## 使用示例
+
+使用视频 ID：
+
+```bash
+grill BV18KBJBeEmV
+```
+
+使用完整 URL：
+
+```bash
+grill "https://www.bilibili.com/video/BV18KBJBeEmV"
+```
+
+使用 YouTube：
+
+```bash
+grill "https://youtu.be/dQw4w9WgXcQ"
+```
+
+使用本地视频文件：
+
+```bash
+grill ".\episode.mp4" "节目名 / 集数 / 出演者 / 其他翻译提示"
+```
+
+使用断点：
+
+```bash
+python main.py ".\episode.mp4" "节目提示" --break-after is_asr_completed
+```
+
+启用可选润色、词表校对和封面生成：
+
+```bash
+python main.py BV18KBJBeEmV "节目提示" --refine --glossary-check --cover
+```
+
+## 常用环境变量
+
+在项目根目录创建 `.env`：
+
+```env
+# ElevenLabs 语音识别
+ELEVENLABS_API_KEY=xxx
+ELEVENLABS_STT_MODEL=scribe_v2
+ELEVENLABS_STT_LANGUAGE_CODE=jpn
+
+# Gemini 翻译
+GEMINI_API_KEY=xxx
+GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_THINKING_LEVEL=HIGH
+
+# 分块翻译
+GEMINI_CHUNK_CHAR_LIMIT=6000
+GEMINI_CONCURRENCY=10
+GEMINI_CHUNK_MAX_RETRIES=3
+GEMINI_CHUNK_MISSING_BLOCK_TOLERANCE=2
+
+# pre-pass 和分块时的视频截图采样
+GEMINI_PRE_PASS_FRAME_INTERVAL_SECONDS=120
+GEMINI_PRE_PASS_FRAME_MAX_SIDE=768
+GEMINI_CHUNK_FRAME_INTERVAL_SECONDS=30
+GEMINI_CHUNK_FRAME_MAX_SIDE=768
+
+# 可选功能
+ENABLE_SRT_REFINE=false
+ENABLE_GLOSSARY_CHECK=false
+ENABLE_COVER_GENERATION=false
+ENABLE_GEMINI_CLI_PREPASS=false
+ENABLE_FULL_FIXED_GLOSSARY=false
+
+# yt-dlp cookies
+COOKIES_TXT_PATH=cookies.txt
+
+# 可选归档和打包路径
+ARCHIVED_PATH=
+PACKAGE_PATH=
+```
+
+实际可用配置以 [settings.py](settings.py) 为准。
+
+## 项目输出结构
+
+每个视频会生成一个独立项目目录：
+
+```text
+projects/{project_id}/
+├── project.json
+├── video.mp4
+├── video.ja.srt
+├── video.cht.srt
+├── video.cht.refined.srt
+├── video.cht.glossary_checked.srt
+├── video.cht.finalized.srt
+├── video.cht.ass
+├── poster.jpg
+├── poster.cover.png
+├── .asr/
+│   ├── audio.opus
+│   └── asr.json
+├── .pre_pass/
+│   └── pre_pass.json
+├── .chunks/
+├── .refine/
+└── .glossary_check/
+```
+
+其中最常用的成品是：
+
+- `video.cht.ass`：带样式的最终 ASS 字幕。
+- `video.cht.finalized.srt`：清理后的最终 SRT 字幕。
+- `video.mp4`：项目内整理后的视频文件。
+
+## 本地视频说明
+
+读取本地视频是本 Fork 在 v0.2.0（2026-06-12）新增的功能，用来处理无法通过 yt-dlp 下载的视频来源。
+
+当传入本地文件路径时，程序会：
+
+1. 根据文件路径创建稳定的 `local_...` 项目 ID。
+2. 把本地视频复制到项目目录中的 `video.mp4`。
+3. 跳过 yt-dlp 元数据和下载流程。
+4. 继续执行抽音频、ASR、翻译、润色和最终导出。
+
+本地视频路径建议配合翻译提示使用，因为本地文件没有站点标题、简介和演员信息可供自动读取。
+
+## 固定词表
+
+固定词表位于：
+
+```text
+services/fixed_glossary/
+```
+
+这里可以维护常见人物、组合、节目名和专有名词的译法。翻译和最终清理会尽量利用这些信息保持用词一致。
+
+## 注意事项
+
+- 语音识别和翻译都会产生 API 费用，请先用短视频或 `--break-after` 测试流程。
+- 如果视频网站需要登录，请准备 `cookies.txt` 并在 `.env` 中设置 `COOKIES_TXT_PATH`。
+- 如果中途失败，可以重新运行同一个视频来源，已完成阶段会跳过。
+- 本地视频如果已经创建项目，后续也可以直接用对应的 `local_...` 项目 ID 续跑。
 
 ## Credits
 
@@ -78,154 +249,4 @@ Original Project:
 
 https://github.com/elishahung/bangumi-grillmaster
 
-感谢原作者提供优秀的项目基础。
-
------------------------------------------------------------------
-
-## 流程
-
-```
-Video ID
-    ↓
-下載影片 (yt-dlp)
-    ↓
-合併影片 (FFmpeg)
-    ↓
-提取音檔 (FFmpeg, mono 16kHz opus)
-    ↓
-語音辨識 (ElevenLabs Scribe v2)
-    ↓
-產生 SRT 字幕
-    ↓
-Pre-pass 分析 (Gemini: 全片簡報，定調人物/專名/語氣/分段摘要)
-    ↓
-併發 chunk 翻譯 (Gemini: 分塊平行翻譯 → 組裝驗證修正)
-    ↓
-潤飾字幕 (Codex, 可選)
-    ↓
-固定詞彙校對 (Codex)
-    ↓
-Finalize：格式清理，輸出 ASS (套樣式) + SRT
-    ↓
-歸檔 (可選)
-    ↓
-封裝交付 (可選：字幕燒錄進影片)
-```
-
-## 安裝
-
-### 前置需求
-
-- Python 3.13+
-- FFmpeg (自行安裝並加入 PATH)
-- uv (推薦) 或 pip
-
-### 安裝步驟
-
-```bash
-# 使用 uv
-uv sync
-
-# 或使用 pip
-pip install -e .
-```
-
-## 使用方式
-
-### 方式一：加入 PATH
-
-將 `scripts/` 資料夾加到系統 PATH，然後執行：
-
-```bash
-grill <SOURCE> [TRANSLATION_HINT]
-```
-
-### 方式二：直接執行
-
-```bash
-python main.py <SOURCE> [TRANSLATION_HINT]
-```
-
-- `SOURCE`: 影片 ID 或完整 URL
-- `TRANSLATION_HINT`: 可選，提供給翻譯用的提示，通常是 bilibili 只有隱晦標題的需要
-
-### 範例
-
-```bash
-# 使用影片標題作為翻譯提示
-grill BV18KBJBeEmV
-
-# 自訂翻譯提示
-grill BV1CakEBaEJp "華大千鳥 - 全力100萬 - 間諜 1/7"
-
-# 使用完整 URL
-grill "https://www.bilibili.com/video/BV18KBJBeEmV"
-```
-
-## 環境變數
-
-建立 `.env` 檔案：
-
-```env
-# ElevenLabs Speech to Text
-ELEVENLABS_API_KEY=xxx
-ELEVENLABS_STT_MODEL=scribe_v2
-ELEVENLABS_STT_LANGUAGE_CODE=jpn
-
-# Google Gemini (翻譯)
-GEMINI_API_KEY=xxx
-GEMINI_MODEL=gemini-3-flash-preview
-
-# DeepSeek (chunk 結構修正)
-DEEPSEEK_API_KEY=xxx
-LLM_CHUNK_FIX_MAX_RETRIES=3            # 修正失敗重試次數
-
-# 可選：Gemini 翻譯調校
-GEMINI_THINKING_LEVEL=HIGH             # 翻譯 thinking level: LOW/MEDIUM/HIGH
-GEMINI_PRE_PASS_FRAME_INTERVAL_SECONDS=120 # pre-pass 全片圖片抽樣頻率（每幾秒一張，另外固定包含影片首尾幀）
-GEMINI_PRE_PASS_FRAME_MAX_SIDE=768     # pre-pass 圖片最長邊尺寸
-GEMINI_CHUNK_CHAR_LIMIT=6000           # 每塊目標字元數 (約 5 分鐘字幕)
-GEMINI_CONCURRENCY=10                  # chunk 併發上限
-GEMINI_CHUNK_MAX_RETRIES=3             # chunk 失敗重試次數
-GEMINI_CHUNK_FRAME_INTERVAL_SECONDS=30 # chunk 圖片抽樣頻率（每幾秒一張，另外固定包含每段首尾幀）
-GEMINI_CHUNK_FRAME_MAX_SIDE=768        # chunk 圖片最長邊尺寸
-GEMINI_CHUNK_MISSING_BLOCK_TOLERANCE=2 # 每塊允許未對齊/缺漏字幕區塊數上限
-ENABLE_FULL_FIXED_GLOSSARY=false       # 固定譯名表整份帶入 pre-pass（false=只帶比對到的）
-
-# 可選：Gemini CLI pre-pass（訂閱制省 API 費用；需安裝 Gemini CLI）
-ENABLE_GEMINI_CLI_PREPASS=false         # 改用 Gemini CLI 跑 pre-pass
-
-# 可選：Codex 後處理（需安裝 Codex CLI）
-ENABLE_SRT_REFINE=true             # 翻譯後再用 Codex 潤飾繁中字幕
-ENABLE_GLOSSARY_CHECK=true         # 潤飾後再用 Codex 校對殘留的英文/假名專名
-ENABLE_COVER_GENERATION=true       # 下載後並行 Codex 風格化封面圖
-
-# 可選：下載/歸檔/封裝
-COOKIES_TXT_PATH=cookies.txt       # 影片來源網站 cookies (供 yt-dlp 使用)
-ARCHIVED_PATH=NAS:\bangumi\ai\     # 歸檔路徑 - 處理完直接移至指定資料夾並將資料夾名稱改為影片名稱
-PACKAGE_PATH=NAS:\bangumi\package\ # 封裝路徑 - 將 ASS 字幕燒錄進影片並複製封面到 <package_path>/<id>_<name>/
-```
-
-## 專案結構
-
-```
-projects/{video_id}/
-├── project.json              # 專案狀態
-├── video.mp4                 # 合併後的影片
-├── video.ja.srt              # 日文原文字幕
-├── .asr/                     # ASR 音檔與 ElevenLabs 原始結果
-│   ├── audio.opus
-│   └── asr.json
-├── .pre_pass/                # Gemini pre-pass 簡報與圖片快取
-│   └── pre_pass.json
-├── .chunks/                  # chunk 音檔 / 圖片 / 翻譯回應快取（供 resume）
-├── .refine/                  # Codex 潤飾報告（可選）
-├── .glossary_check/          # Codex 固定詞彙校對報告（可選）
-├── poster.jpg                # yt-dlp 取得的原始封面
-├── poster.cover.png          # Codex 風格化封面（可選）
-├── video.cht.srt             # 繁體中文翻譯字幕
-├── video.cht.refined.srt     # Codex 潤飾後字幕（可選）
-├── video.cht.glossary_checked.srt  # Codex 固定詞彙校對後字幕（可選）
-├── video.cht.finalized.srt   # 最終 SRT（標點清理，給不支援 ASS 的裝置）
-└── video.cht.ass             # 最終 ASS（套樣式 + 標點清理）
-```
+感谢原作者提供优秀的项目基础
