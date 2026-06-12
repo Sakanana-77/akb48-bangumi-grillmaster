@@ -1,4 +1,4 @@
-"""Codex-driven Traditional Chinese subtitle refinement."""
+"""Codex-driven Simplified Chinese subtitle refinement."""
 
 from __future__ import annotations
 

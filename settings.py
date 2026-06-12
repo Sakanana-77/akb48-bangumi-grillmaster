@@ -126,7 +126,7 @@ class Settings(BaseSettings):
     # --- Optional Codex-driven post-processing ------------------------------
     enable_srt_refine: bool = Field(
         default=False,
-        description="Enable optional Codex-driven Traditional Chinese subtitle refinement stage between TRANSLATED and FINALIZED",
+        description="Enable optional Codex-driven Simplified Chinese subtitle refinement stage between TRANSLATED and FINALIZED",
     )
     enable_glossary_check: bool = Field(
         default=False,

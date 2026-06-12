@@ -252,34 +252,34 @@ class FormatFixedGlossaryBlockTests(unittest.TestCase):
             others=((["ボケ"], "裝傻"),),
         )
         out = format_fixed_glossary_block(glossary, full_mode=False)
-        self.assertIn("〔藝人/組合〕", out)
-        self.assertIn("・組合：かまいたち → 鎌鼬", out)
+        self.assertIn("〔艺人/组合〕", out)
+        self.assertIn("・组合：かまいたち → 鎌鼬", out)
         self.assertIn("    · 山内 / 山內健司 → 山內", out)
-        self.assertIn("・（單人）", out)
+        self.assertIn("・（单人）", out)
         self.assertIn("    · ヒコロヒー → Hikorohee", out)
-        self.assertIn("〔節目/單元/品牌/術語〕", out)
+        self.assertIn("〔节目/单元/品牌/术语〕", out)
         self.assertIn("- ボケ → 裝傻", out)
 
     def test_header_differs_full_vs_filtered(self):
         glossary = G(others=((["ボケ"], "裝傻"),))
         full = format_fixed_glossary_block(glossary, full_mode=True)
         filtered = format_fixed_glossary_block(glossary, full_mode=False)
-        self.assertIn("完整參照表", full)
-        self.assertNotIn("完整參照表", filtered)
-        self.assertIn("最高優先級", filtered)
+        self.assertIn("完整参照表", full)
+        self.assertNotIn("完整参照表", filtered)
+        self.assertIn("最高优先级", filtered)
 
     def test_empty_section_omitted(self):
         only_others = format_fixed_glossary_block(
             G(others=((["ボケ"], "裝傻"),)), full_mode=False
         )
-        self.assertNotIn("〔藝人/組合〕", only_others)
-        self.assertIn("〔節目/單元/品牌/術語〕", only_others)
+        self.assertNotIn("〔艺人/组合〕", only_others)
+        self.assertIn("〔节目/单元/品牌/术语〕", only_others)
 
         only_talents = format_fixed_glossary_block(
             G(U(None, [(["ヤス"], "Yasu")])), full_mode=False
         )
-        self.assertIn("〔藝人/組合〕", only_talents)
-        self.assertNotIn("〔節目/單元/品牌/術語〕", only_talents)
+        self.assertIn("〔艺人/组合〕", only_talents)
+        self.assertNotIn("〔节目/单元/品牌/术语〕", only_talents)
 
 
 if __name__ == "__main__":

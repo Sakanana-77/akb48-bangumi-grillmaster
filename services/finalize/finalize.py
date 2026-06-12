@@ -1,7 +1,7 @@
 """Convert translated SRT subtitles to styled ASS format.
 
-Applies Traditional Chinese subtitle punctuation rules aligned with the
-Netflix TC style guide:
+Applies Chinese subtitle punctuation cleanup rules aligned with the
+project's Simplified Chinese output target:
 
 - Strip leading/trailing ``，``/``、``/``；``/``。`` plus surrounding
   whitespace from each line (Netflix forbids terminal commas/periods at
@@ -38,7 +38,7 @@ PlayResY: 1080
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,源泉圓體月 M,64,&H00FDFDFD,&H000000FF,&H00000000,&H7D000000,0,0,0,0,100,100,0,0,1,6,2,2,10,10,40,1
+Style: Default,Resource Han Rounded CN Medium,80,&H00FDFDFD,&H000000FF,&H00000000,&H7D000000,0,0,0,0,100,100,0,0,1,3,0,2,10,10,40,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -47,13 +47,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 _LINE_EDGE_PUNCT = re.compile(r"^[\s，、；。]+|[\s，、；。]+$")
 _ELLIPSIS_RUN = re.compile(r"(?:\.{3,}|[…⋯])+")
 _QUOTE_TAIL_PUNCT = re.compile(r"[\s，、；。]+(?=[」』])")
-# Netflix TC: full-width punctuation carries no adjacent spaces. Strip
+# Full-width Chinese punctuation carries no adjacent spaces. Strip
 # whitespace hugging a mid-line ，、；。：！？ — e.g. the refine LLM writes
 # two clauses on one line as "好帥。 很有型", and the "。"→"，" pass would
 # otherwise leave "好帥， 很有型".
 _FW_PUNCT_SPACE = re.compile(r"[ \t　]*([，、；。：！？])[ \t　]*")
-# Netflix Traditional Chinese (Taiwan) TTSG: two-speaker dialogue uses an
-# English hyphen with NO space after it. Normalize a leading speaker dash —
+# Two-speaker dialogue uses an English hyphen with NO space after it.
+# Normalize a leading speaker dash —
 # any hyphen/dash variant incl. full-width "－" (U+FF0D), en/em dash, minus —
 # plus surrounding spaces, to a single half-width "-". A leading "--"
 # (interruption) keeps its second dash: only the first char is matched.
@@ -230,7 +230,9 @@ def _clean_line(line: str) -> str:
     line = _ELLIPSIS_RUN.sub("…", line)
     line = _QUOTE_TAIL_PUNCT.sub("", line)
     line = _FW_PUNCT_SPACE.sub(r"\1", line)
-    return line.replace("。", "，")
+    line = line.replace("。", "")
+    line = line.replace("，", " ")
+    return line
 
 
 def _clean_text(text: str) -> str:

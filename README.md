@@ -1,3 +1,27 @@
+Bangumi Grillmaster Simplified Chinese Edition
+
+基于 elishahung/bangumi-grillmaster 修改。
+
+特性
+简体中文输出
+AKB48 / 坂道系偶像综艺优化
+固定译名表优化
+中国大陆字幕风格
+Gemini 自动翻译
+ElevenLabs 语音识别
+
+与原版区别
+默认输出简体中文
+优化 AKB48 成员译名
+优化偶像综艺用语
+去除繁体字幕规则
+自定义字幕标点风格
+Credits
+
+Original project:
+https://github.com/elishahung/bangumi-grillmaster
+
+-----------------------------------------------------------------
 # Bangumi GrillMaster
 
 下載日本綜藝節目，生成繁體中文 SRT / ASS 字幕方便個人使用識讀

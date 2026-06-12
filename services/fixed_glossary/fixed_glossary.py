@@ -238,11 +238,15 @@ def _format_entry(entry: FixedGlossaryEntry) -> str:
 
 
 _FULL_HEADER = (
-    "\n【固定詞彙表（完整參照表，未過濾；僅在該名稱實際出現時才套用，"
-    "容許 ASR 誤聽，未出現者忽略）】\n"
+    "\n【固定词汇表（完整参照表，未过滤；仅在该名称实际出现时才套用，"
+    "容许 ASR 误听，未出现者忽略）】\n"
+    "注意：表内 zh 目标如果含有繁体字，输出前必须转成中国大陆简体字；"
+    "此表固定实体、罗马字和对应跨度，不固定繁体字形。\n"
 )
 _FILTERED_HEADER = (
-    "\n【固定詞彙表（最高優先級，必須採用；同一行的多個別名需全部正規化為同一目標）】\n"
+    "\n【固定词汇表（最高优先级，必须采用；同一行的多个别名需全部正规化为同一目标）】\n"
+    "注意：表内 zh 目标如果含有繁体字，输出前必须转成中国大陆简体字；"
+    "此表固定实体、罗马字和对应跨度，不固定繁体字形。\n"
 )
 
 
@@ -260,17 +264,17 @@ def format_fixed_glossary_block(
         return ""
     sections: list[str] = []
     if glossary.talents:
-        lines = ["〔藝人/組合〕"]
+        lines = ["〔艺人/组合〕"]
         for unit in glossary.talents:
             if unit.group is not None:
-                lines.append(f"・組合：{_format_entry(unit.group)}")
+                lines.append(f"・组合：{_format_entry(unit.group)}")
             else:
-                lines.append("・（單人）")
+                lines.append("・（单人）")
             for member in unit.members:
                 lines.append(f"    · {_format_entry(member)}")
         sections.append("\n".join(lines))
     if glossary.others:
-        lines = ["〔節目/單元/品牌/術語〕"]
+        lines = ["〔节目/单元/品牌/术语〕"]
         lines.extend(f"- {_format_entry(entry)}" for entry in glossary.others)
         sections.append("\n".join(lines))
     header = _FULL_HEADER if full_mode else _FILTERED_HEADER

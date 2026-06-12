@@ -534,7 +534,7 @@ class Project(BaseModel):
 
     @property
     def refined_srt_path(self) -> Path:
-        """Get the path to the Codex-refined Traditional Chinese SRT file."""
+        """Get the path to the Codex-refined Simplified Chinese SRT file."""
         return self.project_path / REFINED_SRT_FILE_NAME
 
     @property
@@ -631,7 +631,7 @@ class Project(BaseModel):
 
     @property
     def glossary_checked_srt_path(self) -> Path:
-        """Path to the Codex glossary-checked Traditional Chinese SRT file.
+        """Path to the Codex glossary-checked Simplified Chinese SRT file.
 
         Produced by the optional glossary-check stage, which copies the
         refined SRT and swaps only fixed-glossary term mismatches. May be

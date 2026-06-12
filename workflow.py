@@ -136,7 +136,7 @@ def process_project(
     4. Extract audio from video
     5. Perform automatic speech recognition (ASR) and write source SRT
     6. Translate subtitles using Gemini
-    7. Refine Traditional Chinese subtitles via Codex (optional)
+    7. Refine Simplified Chinese subtitles via Codex (optional)
     8. Glossary-check the refined subtitles via Codex (optional)
     9. Finalize: emit styled ASS + cleaned SRT from glossary-checked/refined/translated SRT
     10. Wait for cover image generation, then archive (optional)
