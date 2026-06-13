@@ -1,6 +1,6 @@
 [project]
 name = "bangumi-grillmaster"
-version = "0.1.0"
+version = "0.3.0"
 description = "japanese tv show transcription"
 requires-python = ">=3.13"
 dependencies = [
@@ -15,3 +15,6 @@ dependencies = [
     "typer>=0.21.1",
     "yt-dlp>=2026.1.29",
 ]
+
+[project.scripts]
+grill = "main:main"

@@ -86,13 +86,15 @@ pip install -e .
 
 ## 使用方式
 
-如果已经把 `scripts/` 加入 PATH，可以直接使用：
+可以使用 `grill` 命令，也可以直接运行 `python main.py`。两种方式调用的是同一个入口，所有参数都可以互换；下面的示例统一使用 `grill`。
+
+如果已经把 `scripts/` 加入 PATH，或已经通过 `pip install -e .` / `uv sync` 安装了项目，可以直接使用：
 
 ```bash
 grill <视频来源> [翻译提示]
 ```
 
-也可以直接运行：
+不使用 `grill` 时，也可以直接运行：
 
 ```bash
 python main.py <视频来源> [翻译提示]
@@ -111,12 +113,6 @@ python main.py <视频来源> [翻译提示]
 
 ```bash
 grill ".\episode.mp4" "节目提示" --source-srt ".\ocr.ja.srt"
-```
-
-也可以直接运行：
-
-```bash
-python main.py ".\episode.mp4" "节目提示" --source-srt ".\ocr.ja.srt"
 ```
 
 这种模式会跳过 ElevenLabs ASR，把外部 SRT 作为 `video.ja.srt` 继续翻译；视频和音频仍会正常处理，供 Gemini pre-pass 和分块翻译参考。
