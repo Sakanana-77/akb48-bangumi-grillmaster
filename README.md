@@ -13,6 +13,10 @@ Bangumi GrillMaster 是一个面向日语综艺、番组和网络视频的自动
 
 本仓库是在原项目基础上做的个人化改造版，主要面向 AKB48 相关综艺、MC、直播切片和字幕制作场景。项目仍保留了原作者针对日本综艺番组的润饰思路、固定译名转换和流程设计，因此也可以用于 AKB48 以外的节目，但并不作为首要推荐用途。如果有更广泛的日本综艺翻译需求，建议优先使用原作者项目。
 
+## 免责声明
+
+本项目仅建议用于个人学习、研究和字幕制作。使用者应自行遵守视频平台服务条款、版权规定以及所在地相关法律法规。使用 ElevenLabs、Gemini、DeepSeek、Codex CLI 等服务产生的 API 或订阅费用由使用者自行承担。请不要将 `.env`、`cookies.txt`、API Key、登录凭据或任何私人配置提交到公开仓库。
+
 ## 功能特点
 
 - 支持 Bilibili、TVer、ABEMA、YouTube 等 yt-dlp 可处理的视频来源。
@@ -166,45 +170,53 @@ grill BV18KBJBeEmV "节目提示" --refine --glossary-check --cover
 在项目根目录创建 `.env`：
 
 ```env
-# ElevenLabs 语音识别
-ELEVENLABS_API_KEY=xxx
-ELEVENLABS_STT_MODEL=scribe_v2
-ELEVENLABS_STT_LANGUAGE_CODE=jpn
+# 复制本文件为 .env，然后填写你自己的密钥和路径。
+# 不要提交 .env、cookies.txt、视频文件、音频文件或项目生成结果。
 
-# Gemini 翻译
-GEMINI_API_KEY=xxx
-GEMINI_MODEL=gemini-3-flash-preview
-GEMINI_THINKING_LEVEL=HIGH
+# ElevenLabs Speech to Text
+ELEVENLABS_API_KEY=                 # ElevenLabs API 密钥，用于 ASR 语音识别
+ELEVENLABS_STT_MODEL=scribe_v2      # ElevenLabs ASR 模型，建议保持 scribe_v2
+ELEVENLABS_STT_LANGUAGE_CODE=jpn    # 语音识别语言提示，jpn 表示日语
 
-# 分块翻译
-GEMINI_CHUNK_CHAR_LIMIT=6000
-GEMINI_CONCURRENCY=10
-GEMINI_CHUNK_MAX_RETRIES=3
-GEMINI_CHUNK_MISSING_BLOCK_TOLERANCE=2
+# Google Gemini 翻译
+GEMINI_API_KEY=                     # Gemini API 密钥，用于 pre-pass 和分块翻译
+GEMINI_MODEL=gemini-3-flash-preview # Gemini 翻译模型
 
-# pre-pass 和分块时的视频截图采样
-GEMINI_PRE_PASS_FRAME_INTERVAL_SECONDS=120
-GEMINI_PRE_PASS_FRAME_MAX_SIDE=768
-GEMINI_CHUNK_FRAME_INTERVAL_SECONDS=30
-GEMINI_CHUNK_FRAME_MAX_SIDE=768
+# DeepSeek 结构修正
+DEEPSEEK_API_KEY=                   # DeepSeek API 密钥，用于修正 chunk 输出结构
+LLM_CHUNK_FIX_MAX_RETRIES=3         # 结构修正失败重试次数
 
-# 可选功能
-ENABLE_SRT_REFINE=false
-ENABLE_GLOSSARY_CHECK=false
-ENABLE_COVER_GENERATION=false
-ENABLE_GEMINI_CLI_PREPASS=false
-ENABLE_FULL_FIXED_GLOSSARY=false
+# 可选：Gemini 翻译调校
+GEMINI_THINKING_LEVEL=HIGH                  # thinking level：LOW / MEDIUM / HIGH
+GEMINI_PRE_PASS_FRAME_INTERVAL_SECONDS=120  # pre-pass 全片截图采样间隔，单位秒
+GEMINI_PRE_PASS_FRAME_MAX_SIDE=768          # pre-pass 截图最长边尺寸
+GEMINI_CHUNK_CHAR_LIMIT=6000                # 每个翻译 chunk 的目标字符数
+GEMINI_CONCURRENCY=10                       # chunk 并发翻译上限
+GEMINI_CHUNK_MAX_RETRIES=3                  # chunk 翻译失败重试次数
+GEMINI_CHUNK_FRAME_INTERVAL_SECONDS=30      # chunk 局部截图采样间隔，单位秒
+GEMINI_CHUNK_FRAME_MAX_SIDE=768             # chunk 截图最长边尺寸
+GEMINI_CHUNK_MISSING_BLOCK_TOLERANCE=2      # 每块允许未对齐/缺漏字幕块数量上限
+GEMINI_INTRO_SKIP_SECONDS=3.0               # 截图采样时跳过片头秒数
+ENABLE_FULL_FIXED_GLOSSARY=false            # 是否把完整固定译名表带入 pre-pass
 
-# yt-dlp cookies
-COOKIES_TXT_PATH=cookies.txt
+# 可选：Gemini CLI pre-pass（订阅制可节省 API 费用；需安装并登录 Gemini CLI）
+ENABLE_GEMINI_CLI_PREPASS=false             # 是否改用 Gemini CLI 跑 pre-pass
+GEMINI_CLI_EXECUTABLE=gemini                # Gemini CLI 可执行文件名或绝对路径
+GEMINI_CLI_MODEL=gemini-3.1-pro-preview     # Gemini CLI pre-pass 使用模型
+GEMINI_CLI_TIMEOUT_SECS=900                 # Gemini CLI 单次调用超时时间，单位秒
+GEMINI_CLI_MAX_RETRIES=3                    # Gemini CLI schema 修复重试次数
 
-# 可选归档和打包路径
-ARCHIVED_PATH=
-PACKAGE_PATH=
+# 可选：Codex 后处理（需安装 Codex CLI）
+ENABLE_SRT_REFINE=false             # 翻译后是否用 Codex 润色简体中文字幕
+ENABLE_GLOSSARY_CHECK=false         # 润色后是否用 Codex 校对固定译名残留
+ENABLE_COVER_GENERATION=false       # 下载后是否并行生成/风格化封面图
+CODEX_EXECUTABLE=codex              # Codex CLI 可执行文件名或绝对路径
+CODEX_DEFAULT_TIMEOUT_SECS=900      # Codex 单次调用默认超时时间，单位秒
 
-# 示例：
-# ARCHIVED_PATH=NAS:\bangumi\ai\
-# PACKAGE_PATH=NAS:\bangumi\package\
+# 可选：下载、归档和封装
+COOKIES_TXT_PATH=cookies.txt        # 视频网站 cookies，供 yt-dlp 下载登录内容
+ARCHIVED_PATH=                      # 归档路径；留空则不自动归档
+PACKAGE_PATH=                       # 打包路径；留空则不执行烧录/打包步骤
 ```
 
 实际可用配置以 [settings.py](settings.py) 为准。
