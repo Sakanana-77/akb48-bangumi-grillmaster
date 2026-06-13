@@ -378,11 +378,11 @@ class ChunkFixTests(unittest.IsolatedAsyncioTestCase):
         # metadata in the fixed SRT. Lenient parser must recognize it and
         # strip it as metadata.
         blocks = chunk_fix._parse_output_blocks_lenient(
-            "506\n00:19:57,516 --> 00:19:9,956\n正處於講求邏輯的搞笑受到評價的時代。\n"
+            "506\n00:19:57,516 --> 00:19:9,956\n正处于讲求逻辑的搞笑受到评价的时代。\n"
         )
         self.assertEqual(len(blocks), 1)
         self.assertEqual(
-            blocks[0].text, "正處於講求邏輯的搞笑受到評價的時代。"
+            blocks[0].text, "正处于讲求逻辑的搞笑受到评价的时代。"
         )
         self.assertNotIn("506", blocks[0].text)
         self.assertNotIn("-->", blocks[0].text)

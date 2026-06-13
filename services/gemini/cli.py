@@ -36,8 +36,8 @@ _MAX_MEDIA_FILE_MB = 20
 _API_KEY_ENV_VARS = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_API_KEY")
 
 _SCHEMA_INSTRUCTION = (
-    "\n\n【輸出要求】只輸出一個符合下列 JSON Schema 的 JSON 物件，"
-    "不要任何說明文字、前後綴或 markdown code fence：\n{schema_json}"
+    "\n\n【输出要求】只输出一个符合下列 JSON Schema 的 JSON 物件，"
+    "不要任何说明文字、前后缀或 markdown code fence：\n{schema_json}"
 )
 
 
@@ -358,12 +358,12 @@ def run_gemini_cli(
                     f"(attempt {attempt}/{attempts}): {ve}"
                 )
                 repair = (
-                    "\n\n【修正要求】你上一次的回應未通過 JSON schema 驗證。"
-                    f"驗證錯誤：\n{ve}\n\n"
-                    "你上一次（無效）的輸出為：\n"
+                    "\n\n【修正要求】你上一次的回应未通过 JSON schema 验证。"
+                    f"验证错误：\n{ve}\n\n"
+                    "你上一次（无效）的输出为：\n"
                     f"{response[:8000]}\n\n"
-                    "請只輸出一個符合 schema 的修正後 JSON 物件，"
-                    "不要任何說明文字或 markdown code fence。"
+                    "请只输出一个符合 schema 的修正后 JSON 物件，"
+                    "不要任何说明文字或 markdown code fence。"
                 )
                 continue
 

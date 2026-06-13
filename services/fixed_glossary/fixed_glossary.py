@@ -19,11 +19,11 @@ FixedGlossaryEntry = tuple[list[str], str]
 
 @dataclass(frozen=True)
 class TalentUnit:
-    """One act: an optional 組合 plus one-or-more members.
+    """One act: an optional 组合 plus one-or-more members.
 
     `group` is None for a solo talent. `members` is always non-empty — a unit
     whose members all fail validation is dropped at load time so a dangling
-    組合 label never reaches the prompt.
+    组合 label never reaches the prompt.
     """
 
     group: FixedGlossaryEntry | None
@@ -205,7 +205,7 @@ def filter_fixed_glossary(
 
     A talent unit is emitted WHOLE (group + every member, unmodified) when
     ANY of its group or member aliases appears, so a bare ambiguous member
-    name still arrives with its full 組合 context for the downstream LLM.
+    name still arrives with its full 组合 context for the downstream LLM.
     `others` entries match individually, exactly as before. Both the haystack
     and each alias pass through `_normalize_jp` so script/width/space/
     punctuation drift in ASR output still matches curated aliases.
@@ -240,13 +240,13 @@ def _format_entry(entry: FixedGlossaryEntry) -> str:
 _FULL_HEADER = (
     "\n【固定词汇表（完整参照表，未过滤；仅在该名称实际出现时才套用，"
     "容许 ASR 误听，未出现者忽略）】\n"
-    "注意：表内 zh 目标如果含有繁体字，输出前必须转成中国大陆简体字；"
-    "此表固定实体、罗马字和对应跨度，不固定繁体字形。\n"
+    "注意：表内 zh 目标必须按中国大陆简体字输出；"
+    "此表固定实体、罗马字和对应跨度。\n"
 )
 _FILTERED_HEADER = (
     "\n【固定词汇表（最高优先级，必须采用；同一行的多个别名需全部正规化为同一目标）】\n"
-    "注意：表内 zh 目标如果含有繁体字，输出前必须转成中国大陆简体字；"
-    "此表固定实体、罗马字和对应跨度，不固定繁体字形。\n"
+    "注意：表内 zh 目标必须按中国大陆简体字输出；"
+    "此表固定实体、罗马字和对应跨度。\n"
 )
 
 
@@ -256,7 +256,7 @@ def format_fixed_glossary_block(
     """Render the glossary as the prompt block (header + grouped sections).
 
     Owns all glossary→prompt text shaping so pre_pass holds no formatting
-    knowledge. Talents are grouped under their 組合 (or 單人) so an ambiguous
+    knowledge. Talents are grouped under their 组合 (or 单人) so an ambiguous
     member token carries disambiguation context; `others` stays a flat list.
     A falsy glossary → "" and an empty section is omitted entirely.
     """
@@ -264,10 +264,10 @@ def format_fixed_glossary_block(
         return ""
     sections: list[str] = []
     if glossary.talents:
-        lines = ["〔艺人/组合〕"]
+        lines = ["〔出演者/团体〕"]
         for unit in glossary.talents:
             if unit.group is not None:
-                lines.append(f"・组合：{_format_entry(unit.group)}")
+                lines.append(f"・团体/组合：{_format_entry(unit.group)}")
             else:
                 lines.append("・（单人）")
             for member in unit.members:

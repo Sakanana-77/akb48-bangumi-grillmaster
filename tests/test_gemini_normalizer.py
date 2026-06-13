@@ -10,13 +10,13 @@ class GeminiNormalizerTests(unittest.TestCase):
             SrtBlock(
                 index=396,
                 timecode="00:17:11,680 --> 00:17:13,200",
-                text="- 給我適可而止。\n-",
+                text="- 给我适可而止。\n-",
             )
         ]
 
         normalized = normalize_translated_blocks(blocks)
 
-        self.assertEqual(normalized[0].text, "- 給我適可而止。")
+        self.assertEqual(normalized[0].text, "- 给我适可而止。")
 
     def test_removes_all_empty_speaker_dash_lines(self):
         blocks = [

@@ -1,6 +1,7 @@
 import json
-import tempfile
+import shutil
 import unittest
+import uuid
 from pathlib import Path
 
 from services.fixed_glossary import (
@@ -51,7 +52,7 @@ class FilterFixedGlossaryTests(unittest.TestCase):
     def test_matches_kana_script_drift(self):
         glossary = G(
             others=(
-                (["渡辺ポット", "渡邊ポット"], "渡邊Pot"),
+                (["渡辺ポット", "渡边ポット"], "渡边Pot"),
                 (["めぞん"], "Maison"),
                 (["原田フニャオ"], "原田Funyao"),
             )
@@ -67,7 +68,7 @@ class FilterFixedGlossaryTests(unittest.TestCase):
         self.assertEqual(matched.talents, ())
         self.assertEqual(
             {zh for _, zh in matched.others},
-            {"渡邊Pot", "Maison", "原田Funyao"},
+            {"渡边Pot", "Maison", "原田Funyao"},
         )
 
     def test_matches_fullwidth_space_and_middledot(self):
@@ -112,47 +113,47 @@ class FilterFixedGlossaryTests(unittest.TestCase):
 
     def test_talent_unit_emitted_whole_on_single_member_match(self):
         unit = U(
-            (["かまいたち"], "鎌鼬"),
-            [(["山内"], "山內"), (["濱家"], "濱家")],
+            (["かまいたち"], "镰鼬"),
+            [(["山内"], "山内"), (["滨家"], "滨家")],
         )
-        matched = filter_fixed_glossary(G(unit), "ゲストは濱家さん")
+        matched = filter_fixed_glossary(G(unit), "ゲストは滨家さん")
         self.assertEqual(len(matched.talents), 1)
         got = matched.talents[0]
-        self.assertEqual(got.group, (["かまいたち"], "鎌鼬"))
+        self.assertEqual(got.group, (["かまいたち"], "镰鼬"))
         self.assertEqual(
-            [zh for _, zh in got.members], ["山內", "濱家"]
+            [zh for _, zh in got.members], ["山内", "滨家"]
         )
 
     def test_talent_unit_emitted_on_group_only_match(self):
-        unit = U((["かまいたち"], "鎌鼬"), [(["山内"], "山內")])
+        unit = U((["かまいたち"], "镰鼬"), [(["山内"], "山内")])
         matched = filter_fixed_glossary(G(unit), "次はかまいたちの出番")
         self.assertEqual(len(matched.talents), 1)
-        self.assertEqual(matched.talents[0].group, (["かまいたち"], "鎌鼬"))
+        self.assertEqual(matched.talents[0].group, (["かまいたち"], "镰鼬"))
 
     def test_talent_unit_not_emitted_when_nothing_matches(self):
-        unit = U((["かまいたち"], "鎌鼬"), [(["山内"], "山內")])
-        self.assertFalse(filter_fixed_glossary(G(unit), "無關內容"))
+        unit = U((["かまいたち"], "镰鼬"), [(["山内"], "山内")])
+        self.assertFalse(filter_fixed_glossary(G(unit), "无关内容"))
 
     def test_solo_unit_match(self):
         solo = U(None, [(["ヒコロヒー"], "Hikorohee")])
         self.assertEqual(
             len(filter_fixed_glossary(G(solo), "ヒコロヒーです").talents), 1
         )
-        self.assertFalse(filter_fixed_glossary(G(solo), "別人").talents)
+        self.assertFalse(filter_fixed_glossary(G(solo), "别人").talents)
 
     def test_others_unchanged_alongside_talents(self):
-        unit = U((["かまいたち"], "鎌鼬"), [(["山内"], "山內")])
+        unit = U((["かまいたち"], "镰鼬"), [(["山内"], "山内")])
         glossary = G(
             unit,
             others=(
-                (["かまいたちの知らんけど"], "鎌鼬的我是不知道啦"),
-                (["ボケ"], "裝傻"),
+                (["かまいたちの知らんけど"], "镰鼬的我是不知道啦"),
+                (["ボケ"], "装傻"),
             ),
         )
-        matched = filter_fixed_glossary(glossary, "山内くんとボケの話")
+        matched = filter_fixed_glossary(glossary, "山内くんとボケの话")
         self.assertEqual(len(matched.talents), 1)
         self.assertEqual(
-            {zh for _, zh in matched.others}, {"裝傻"}
+            {zh for _, zh in matched.others}, {"装傻"}
         )
 
     def test_empty_member_alias_guard_in_unit(self):
@@ -164,12 +165,13 @@ class FilterFixedGlossaryTests(unittest.TestCase):
 
 class LoadFixedGlossaryTests(unittest.TestCase):
     def _load(self, obj):
-        with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "g.json"
-            p.write_text(
-                json.dumps(obj, ensure_ascii=False), encoding="utf-8"
-            )
-            return load_fixed_glossary(path=p)
+        base = Path(__file__).resolve().parents[1] / "tmp_test_artifacts"
+        root = base / f"tmp_fixed_glossary_{uuid.uuid4().hex}"
+        root.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+        p = root / "g.json"
+        p.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+        return load_fixed_glossary(path=p)
 
     def test_bad_top_level_type_returns_empty(self):
         # An un-migrated old flat-list file must degrade safely, not crash.
@@ -182,18 +184,18 @@ class LoadFixedGlossaryTests(unittest.TestCase):
             {
                 "talents": [
                     {
-                        "group": {"jp": ["かまいたち"], "zh": "鎌鼬"},
-                        "members": [{"jp": ["山内"], "zh": "山內"}],
+                        "group": {"jp": ["かまいたち"], "zh": "镰鼬"},
+                        "members": [{"jp": ["山内"], "zh": "山内"}],
                     },
                     {"members": [{"jp": ["ヒコロヒー"], "zh": "Hikorohee"}]},
                 ],
-                "others": [{"jp": ["ボケ"], "zh": "裝傻"}],
+                "others": [{"jp": ["ボケ"], "zh": "装傻"}],
             }
         )
         self.assertEqual(len(g.talents), 2)
-        self.assertEqual(g.talents[0].group, (["かまいたち"], "鎌鼬"))
+        self.assertEqual(g.talents[0].group, (["かまいたち"], "镰鼬"))
         self.assertIsNone(g.talents[1].group)
-        self.assertEqual({zh for _, zh in g.others}, {"裝傻"})
+        self.assertEqual({zh for _, zh in g.others}, {"装傻"})
 
     def test_malformed_unit_skipped(self):
         g = self._load(
@@ -247,21 +249,21 @@ class FormatFixedGlossaryBlockTests(unittest.TestCase):
 
     def test_grouped_layout_with_group_and_solo(self):
         glossary = G(
-            U((["かまいたち"], "鎌鼬"), [(["山内", "山內健司"], "山內")]),
+            U((["かまいたち"], "镰鼬"), [(["山内", "山内健司"], "山内")]),
             U(None, [(["ヒコロヒー"], "Hikorohee")]),
-            others=((["ボケ"], "裝傻"),),
+            others=((["ボケ"], "装傻"),),
         )
         out = format_fixed_glossary_block(glossary, full_mode=False)
-        self.assertIn("〔艺人/组合〕", out)
-        self.assertIn("・组合：かまいたち → 鎌鼬", out)
-        self.assertIn("    · 山内 / 山內健司 → 山內", out)
+        self.assertIn("〔出演者/团体〕", out)
+        self.assertIn("・团体/组合：かまいたち → 镰鼬", out)
+        self.assertIn("    · 山内 / 山内健司 → 山内", out)
         self.assertIn("・（单人）", out)
         self.assertIn("    · ヒコロヒー → Hikorohee", out)
         self.assertIn("〔节目/单元/品牌/术语〕", out)
-        self.assertIn("- ボケ → 裝傻", out)
+        self.assertIn("- ボケ → 装傻", out)
 
     def test_header_differs_full_vs_filtered(self):
-        glossary = G(others=((["ボケ"], "裝傻"),))
+        glossary = G(others=((["ボケ"], "装傻"),))
         full = format_fixed_glossary_block(glossary, full_mode=True)
         filtered = format_fixed_glossary_block(glossary, full_mode=False)
         self.assertIn("完整参照表", full)
@@ -270,15 +272,15 @@ class FormatFixedGlossaryBlockTests(unittest.TestCase):
 
     def test_empty_section_omitted(self):
         only_others = format_fixed_glossary_block(
-            G(others=((["ボケ"], "裝傻"),)), full_mode=False
+            G(others=((["ボケ"], "装傻"),)), full_mode=False
         )
-        self.assertNotIn("〔艺人/组合〕", only_others)
+        self.assertNotIn("〔出演者/团体〕", only_others)
         self.assertIn("〔节目/单元/品牌/术语〕", only_others)
 
         only_talents = format_fixed_glossary_block(
             G(U(None, [(["ヤス"], "Yasu")])), full_mode=False
         )
-        self.assertIn("〔艺人/组合〕", only_talents)
+        self.assertIn("〔出演者/团体〕", only_talents)
         self.assertNotIn("〔节目/单元/品牌/术语〕", only_talents)
 
 

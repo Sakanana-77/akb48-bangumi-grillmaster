@@ -1,5 +1,6 @@
 import shutil
 import unittest
+import uuid
 from pathlib import Path
 from unittest.mock import patch
 
@@ -18,37 +19,37 @@ _FAKE_GLOSSARY = FixedGlossary(
 
 _HAN_ONLY_SRT = """1
 00:00:01,000 --> 00:00:02,000
-這是純中文字幕
+这是纯中文字幕
 
 2
 00:00:02,000 --> 00:00:03,000
-完全沒有英文或假名
+完全没有英文或假名
 """
 
 _KANA_SRT = """1
 00:00:01,000 --> 00:00:02,000
-這是純中文字幕
+这是纯中文字幕
 
 2
 00:00:02,000 --> 00:00:03,000
-他在コーナー登場
+他在コーナー登场
 """
 
 # A lone Latin letter and a lone kana — no >=2 consecutive run of either.
 _SINGLE_CHAR_SRT = """1
 00:00:01,000 --> 00:00:02,000
-他拿到A獎
+他拿到A奖
 
 2
 00:00:02,000 --> 00:00:03,000
-這個ア沒問題
+这个ア没问题
 """
 
 
 class GlossaryCheckTests(unittest.TestCase):
     def _make_project(self) -> Project:
         base = Path(__file__).resolve().parents[1] / "tmp_test_artifacts"
-        root = base / "tmp_glossary_check"
+        root = base / f"tmp_glossary_check_{uuid.uuid4().hex}"
         shutil.rmtree(root, ignore_errors=True)
         root.mkdir(parents=True, exist_ok=True)
         self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
@@ -97,8 +98,8 @@ class GlossaryCheckTests(unittest.TestCase):
         project = self._make_project()
         self._write_refined(
             project,
-            "1\n00:00:01,000 --> 00:00:02,000\n這是純中文字幕\n\n"
-            "2\n00:00:02,000 --> 00:00:03,000\n他在Gallop壓軸登場\n",
+            "1\n00:00:01,000 --> 00:00:02,000\n这是纯中文字幕\n\n"
+            "2\n00:00:02,000 --> 00:00:03,000\n他在Gallop压轴登场\n",
         )
 
         with (
@@ -116,8 +117,8 @@ class GlossaryCheckTests(unittest.TestCase):
         project = self._make_project()
         self._write_refined(
             project,
-            "1\n00:00:01,000 --> 00:00:02,000\n這是純中文字幕\n\n"
-            "2\n00:00:02,000 --> 00:00:03,000\n他喜歡Long Coat的演出\n",
+            "1\n00:00:01,000 --> 00:00:02,000\n这是纯中文字幕\n\n"
+            "2\n00:00:02,000 --> 00:00:03,000\n他喜欢Long Coat的演出\n",
         )
 
         with (
@@ -137,8 +138,8 @@ class GlossaryCheckTests(unittest.TestCase):
         project = self._make_project()
         self._write_refined(
             project,
-            "1\n00:00:01,000 --> 00:00:02,000\n這是純中文字幕\n\n"
-            "2\n00:00:02,000 --> 00:00:03,000\n他看了GallopXY節目\n",
+            "1\n00:00:01,000 --> 00:00:02,000\n这是纯中文字幕\n\n"
+            "2\n00:00:02,000 --> 00:00:03,000\n他看了GallopXY节目\n",
         )
 
         with (
@@ -169,15 +170,20 @@ class GlossaryCheckTests(unittest.TestCase):
         project = self._make_project()
         self._write_refined(project, _KANA_SRT)
 
-        with patch.object(
-            gc, "run_codex_exec", side_effect=RuntimeError("codex boom")
+        with (
+            patch.object(
+                gc, "run_codex_exec", side_effect=RuntimeError("codex boom")
+            ),
+            patch.object(Path, "unlink", autospec=True) as unlink,
         ):
             with self.assertRaises(RuntimeError):
                 gc.glossary_check_subtitles(project)
 
         cache = project.glossary_check_cache_dir
-        self.assertFalse((cache / "fixed_glossary.json").exists())
-        self.assertFalse((cache / "fixed_glossary.md").exists())
+        unlink.assert_any_call(
+            cache / "fixed_glossary.json", missing_ok=True
+        )
+        unlink.assert_any_call(cache / "fixed_glossary.md", missing_ok=True)
 
     def test_structural_divergence_raises_and_cleans(self):
         project = self._make_project()
@@ -186,20 +192,23 @@ class GlossaryCheckTests(unittest.TestCase):
         def _write_bad_output(*args, **kwargs):
             # One block instead of two -> structural mismatch.
             project.glossary_checked_srt_path.write_text(
-                "1\n00:00:01,000 --> 00:00:02,000\n這是純中文字幕\n",
+                "1\n00:00:01,000 --> 00:00:02,000\n这是纯中文字幕\n",
                 encoding="utf-8",
             )
             return "done"
 
-        with patch.object(
-            gc, "run_codex_exec", side_effect=_write_bad_output
+        with (
+            patch.object(gc, "run_codex_exec", side_effect=_write_bad_output),
+            patch.object(Path, "unlink", autospec=True) as unlink,
         ):
             with self.assertRaises(gc.GlossaryCheckError):
                 gc.glossary_check_subtitles(project)
 
         cache = project.glossary_check_cache_dir
-        self.assertFalse((cache / "fixed_glossary.json").exists())
-        self.assertFalse((cache / "fixed_glossary.md").exists())
+        unlink.assert_any_call(
+            cache / "fixed_glossary.json", missing_ok=True
+        )
+        unlink.assert_any_call(cache / "fixed_glossary.md", missing_ok=True)
 
 
 if __name__ == "__main__":

@@ -85,14 +85,17 @@ def _build_user_message(
     boundaries = [
         {"from_index": c[0].index, "to_index": c[-1].index} for c in chunks
     ]
-    parts = ["請分析以下日本綜藝節目字幕，輸出符合 schema 的 JSON 簡報。"]
+    parts = [
+        "请分析以下 AKB48 相关节目、MC、综艺或直播切片字幕，"
+        "输出符合 schema 的 JSON 简报。"
+    ]
     if video_description:
-        parts.append(f"\n【節目標題/資訊】\n{video_description}")
+        parts.append(f"\n【节目标题/资讯】\n{video_description}")
     if source_metadata_context:
-        parts.append(f"\n【官方來源 Metadata】\n{source_metadata_context}")
+        parts.append(f"\n【官方来源 Metadata】\n{source_metadata_context}")
     if parent_pre_pass_context:
         parts.append(
-            "\n【上集 Pre-Pass JSON（請延續命名與術語一致性）】\n"
+            "\n【上集 Pre-Pass JSON（请延续命名与术语一致性）】\n"
             f"{parent_pre_pass_context}"
         )
     glossary_block = format_fixed_glossary_block(
@@ -101,15 +104,15 @@ def _build_user_message(
     if glossary_block:
         parts.append(glossary_block)
     parts.append(
-        "\n【Chunk 邊界】下游會將字幕切成以下 index 區間平行翻譯，請為每段輸出一個 segment_summary："
+        "\n【Chunk 边界】下游会将字幕切成以下 index 区间平行翻译，请为每段输出一个 segment_summary："
         f"\n{json.dumps(boundaries, ensure_ascii=False)}"
     )
     if frame_timestamps:
         parts.append(
-            "\n【代表圖片時間點（秒）】\n"
+            "\n【代表图片时间点（秒）】\n"
             + ", ".join(f"{timestamp:.3f}" for timestamp in frame_timestamps)
         )
-    parts.append(f"\n【完整來源 SRT（ASR 產生，可能有錯）】\n---\n{srt_text}")
+    parts.append(f"\n【完整来源 SRT（ASR 产生，可能有错）】\n---\n{srt_text}")
     return "\n".join(parts)
 
 

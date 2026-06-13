@@ -67,11 +67,11 @@ async def _await_with_manual_timeout(
 
 def _build_user_message(source_srt: str, broken_output: str, error: str) -> str:
     return (
-        "下游譯者輸出的 SRT 結構與來源不符，請輸出 JSON 對位資訊。\n"
-        "不要輸出 SRT，不要改寫、分割、合併任何譯文 text。\n\n"
-        f"【驗證錯誤】\n{error}\n\n"
-        f"【來源 SRT（權威 index/timecode）】\n---\n{source_srt}\n---\n\n"
-        f"【待修復的翻譯 SRT】\n---\n{broken_output}\n---"
+        "下游译者输出的 SRT 结构与来源不符，请输出 JSON 对位资讯。\n"
+        "不要输出 SRT，不要改写、分割、合并任何译文 text。\n\n"
+        f"【验证错误】\n{error}\n\n"
+        f"【来源 SRT（权威 index/timecode）】\n---\n{source_srt}\n---\n\n"
+        f"【待修复的翻译 SRT】\n---\n{broken_output}\n---"
     )
 
 

@@ -284,6 +284,7 @@ services/fixed_glossary/
 ## 注意事项
 
 - 默认 ASR 和翻译都会产生 API 费用，请先用短视频或 `--break-after` 测试流程；使用 `--source-srt` 时会跳过 ElevenLabs ASR。
+- 根据是否启用 CLI、润色、词表校对、重试和模型配置，实际成本会略有差异。仅使用 ElevenLabs ASR `scribe_v2` 与 `gemini-3-flash-preview` 时，粗略成本约为 0.2 人民币元/分钟。
 - 如果视频网站需要登录，请准备 `cookies.txt` 并在 `.env` 中设置 `COOKIES_TXT_PATH`。
 - 如果中途失败，可以重新运行同一个视频来源，已完成阶段会跳过。
 - 本地视频如果已经创建项目，后续也可以直接用对应的 `local_...` 项目 ID 续跑。

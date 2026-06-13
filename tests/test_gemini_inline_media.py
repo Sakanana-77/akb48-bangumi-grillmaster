@@ -136,7 +136,7 @@ class GeminiInlineMediaTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(contents[1].inline_data.data, b"frame-bytes")
         self.assertEqual(contents[1].inline_data.mime_type, "image/jpeg")
         self.assertIsInstance(contents[-1], str)
-        self.assertIn("【官方來源 Metadata】", contents[-1])
+        self.assertIn("【官方来源 Metadata】", contents[-1])
         self.assertIn("山内　健司", contents[-1])
         self.assertIn("OFFICIAL SOURCE METADATA", config.system_instruction)
         self.assertIn("characters` MUST include", config.system_instruction)

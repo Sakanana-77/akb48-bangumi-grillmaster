@@ -49,8 +49,8 @@ _ELLIPSIS_RUN = re.compile(r"(?:\.{3,}|[…⋯])+")
 _QUOTE_TAIL_PUNCT = re.compile(r"[\s，、；。]+(?=[」』])")
 # Full-width Chinese punctuation carries no adjacent spaces. Strip
 # whitespace hugging a mid-line ，、；。：！？ — e.g. the refine LLM writes
-# two clauses on one line as "好帥。 很有型", and the "。"→"，" pass would
-# otherwise leave "好帥， 很有型".
+# two clauses on one line as "好帅。 很有型", and the "。"→"，" pass would
+# otherwise leave "好帅， 很有型".
 _FW_PUNCT_SPACE = re.compile(r"[ \t　]*([，、；。：！？])[ \t　]*")
 # Two-speaker dialogue uses an English hyphen with NO space after it.
 # Normalize a leading speaker dash —
@@ -144,7 +144,7 @@ def _curated_name_units() -> list[str]:
     """Mixed Chinese-Latin zh renderings from the bundled curated glossary.
 
     Only names containing BOTH a Han/kana char AND a Latin letter are
-    force-added (e.g. `金屬Bat`, `水川Katamari`). These are highly
+    force-added (e.g. `金属Bat`, `水川Katamari`). These are highly
     distinctive, so backfilling them is safe even when this episode's
     pre_pass missed them (pre_pass often only mentions a name inside a
     segment summary). Pure-Latin curated names (e.g. `Diane`, `THE SECOND`)
@@ -175,7 +175,7 @@ def _build_latin_name_spacer(
     `units` (no Latin letter) so they are left untouched.
 
     The matcher also tolerates `[ \\t]` that an upstream LLM may have wrongly
-    inserted *inside* a unit (e.g. `金屬 Bat`, `Imadei 醬`, `Long  Coat
+    inserted *inside* a unit (e.g. `金属 Bat`, `Imadei 酱`, `Long  Coat
     Daddy`, or even fully de-spaced `LongCoatDaddy`) and rewrites every hit
     back to the canonical form. Only whitespace is tolerated between unit
     characters — never other characters — so distinct names with real text

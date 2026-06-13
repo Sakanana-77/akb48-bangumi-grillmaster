@@ -87,7 +87,7 @@ def _build_user_message(
         [
             f"- {frame.timestamp_seconds:.3f}s"
             + (
-                " (chunk 首幀)"
+                " (chunk 首帧)"
                 if abs(
                     frame.timestamp_seconds
                     - media_assets.time_range.start_seconds
@@ -100,16 +100,16 @@ def _build_user_message(
     )
 
     return (
-        f"你是第 {chunk_index + 1}/{total_chunks} 塊翻譯員，負責 SRT index "
+        f"你是第 {chunk_index + 1}/{total_chunks} 块翻译员，负责 SRT index "
         f"{from_index}–{to_index}。\n\n"
-        f"【Chunk 時間範圍】\n"
+        f"【Chunk 时间范围】\n"
         f"{media_assets.time_range.start_seconds:.3f}s - "
         f"{media_assets.time_range.end_seconds:.3f}s\n\n"
-        f"【Chunk 圖片時間點】\n"
-        f"{frame_lines or '無'}\n\n"
-        f"【Pre-pass 簡報】\n"
+        f"【Chunk 图片时间点】\n"
+        f"{frame_lines or '无'}\n\n"
+        f"【Pre-pass 简报】\n"
         f"{json.dumps(briefing, ensure_ascii=False, indent=2)}\n\n"
-        f"【SRT 區段（index {from_index}–{to_index}，共 {len(chunk)} block）】\n"
+        f"【SRT 区段（index {from_index}–{to_index}，共 {len(chunk)} block）】\n"
         f"---\n{srt_slice}"
     )
 

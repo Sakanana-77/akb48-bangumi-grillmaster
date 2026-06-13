@@ -8,7 +8,7 @@ Files in the current working directory:
 
 - `video.cht.refined.srt` — the refined Simplified Chinese subtitles; the baseline you copy from.
 - `.glossary_check/fixed_glossary.json` — the authoritative curated jp→zh fixed glossary.
-- `.glossary_check/fixed_glossary.md` — the fixed-glossary translation philosophy, for terms not present in the json. This file may contain legacy Taiwan Traditional Chinese wording; adapt its naming philosophy to Mainland China Simplified Chinese and never copy its Traditional characters into output.
+- `.glossary_check/fixed_glossary.md` — the fixed-glossary translation philosophy, focused on AKB48-related programs while retaining useful Japanese variety naming rules.
 - `.pre_pass/pre_pass.json` — summary, cast, proper_nouns, glossary, catchphrases, tone notes.
 
 `video.ja.srt` is **not** a routine reference for this task. Consult it only if a flagged token is genuinely ambiguous and you need to recover what its Japanese source term was; otherwise do not read it.
