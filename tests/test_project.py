@@ -221,6 +221,30 @@ class SourceParsingTests(unittest.TestCase):
 
         self.assertEqual(project.local_source_path, video_path.resolve())
 
+    def test_project_persists_external_source_srt_path(self):
+        root = (
+            Path(__file__).resolve().parents[1]
+            / "tmp_test_artifacts"
+            / f"tmp_source_srt_project_{uuid.uuid4().hex}"
+        )
+        source_srt = root / "ocr.ja.srt"
+        root.mkdir(parents=True, exist_ok=True)
+        source_srt.write_text(
+            "1\n00:00:01,000 --> 00:00:02,000\nhello\n",
+            encoding="utf-8",
+        )
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+
+        with patch.object(project_module, "PROJECT_ROOT_NAME", str(root)):
+            project = Project.from_source_str(
+                "BV1ZArvBaEqL",
+                source_srt_path=source_srt,
+            )
+            project.save()
+            loaded = Project.from_source_str("BV1ZArvBaEqL")
+
+        self.assertEqual(loaded.source_srt_path, source_srt)
+
 
 if __name__ == "__main__":
     unittest.main()

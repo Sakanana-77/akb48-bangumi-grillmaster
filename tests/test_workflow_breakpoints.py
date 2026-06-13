@@ -37,6 +37,7 @@ class WorkflowBreakpointTests(unittest.TestCase):
         project.is_srt_refined = False
         project.is_glossary_checked = False
         project.is_cover_generated = False
+        project.source_srt_path = None
         project.audio_path = Path("projects/demo/.asr/audio.opus")
         project.asr_path = Path("projects/demo/.asr/asr.json")
         project.srt_path = Path("projects/demo/video.ja.srt")
@@ -107,6 +108,7 @@ class WorkflowBreakpointTests(unittest.TestCase):
         project.is_asr_completed = True
         project.is_srt_completed = True
         project.translation_hint = None
+        project.source_srt_path = None
         project.video_path = Path("projects/demo/video.mp4")
         project.pre_pass_path = Path("projects/demo/.pre_pass/pre_pass.json")
         project.pre_pass_cache_dir = Path("projects/demo/.pre_pass")
@@ -235,6 +237,7 @@ class WorkflowBreakpointTests(unittest.TestCase):
         project.video_path = Path("projects/local_demo_123/video.mp4")
         project.project_path = Path("projects/local_demo_123")
         project.translation_hint = None
+        project.source_srt_path = None
         project.is_metadata_fetched = False
         project.is_downloaded = False
         project.is_video_processed = False
@@ -264,6 +267,35 @@ class WorkflowBreakpointTests(unittest.TestCase):
         )
         project.mark_progress.assert_any_call(
             workflow_module.ProgressStage.DOWNLOADED
+        )
+
+    def test_source_srt_skips_asr_and_imports_srt(self):
+        project = self._build_project_mock()
+        project.source_srt_path = Path("ocr.ja.srt")
+
+        with (
+            patch.object(
+                workflow_module.Project, "from_source_str", return_value=project
+            ),
+            patch.object(workflow_module, "ElevenLabsASR") as elevenlabs_cls,
+            patch.object(workflow_module, "convert_file") as convert_file,
+            patch.object(workflow_module, "import_srt_file") as import_srt_file,
+        ):
+            workflow_module.process_project(
+                "demo",
+                break_after=workflow_module.ProgressStage.SRT_COMPLETED,
+            )
+
+        elevenlabs_cls.assert_not_called()
+        convert_file.assert_not_called()
+        import_srt_file.assert_called_once_with(
+            project.source_srt_path, project.srt_path
+        )
+        project.mark_progress.assert_any_call(
+            workflow_module.ProgressStage.ASR_COMPLETED
+        )
+        project.mark_progress.assert_any_call(
+            workflow_module.ProgressStage.SRT_COMPLETED
         )
 
 

@@ -116,6 +116,7 @@ class Project(BaseModel):
     translation_hint: str | None = None
     parent_project_path: Path | None = None
     local_source_path: Path | None = None
+    source_srt_path: Path | None = None
     source_metadata: SourceMetadata = Field(default_factory=SourceMetadata)
     total_cost: float = 0.0
     service_costs: dict[str, float] = Field(default_factory=dict)
@@ -222,6 +223,7 @@ class Project(BaseModel):
         source_str: str,
         translation_hint: str | None = None,
         parent_project_path: str | Path | None = None,
+        source_srt_path: str | Path | None = None,
     ) -> "Project":
         """Load an existing project from disk or create a new one.
 
@@ -233,6 +235,8 @@ class Project(BaseModel):
                 for cross-episode consistency. Accepts paths under `projects/`
                 or anywhere else (e.g., archived locations) since the parent
                 may have been archived.
+            source_srt_path: Optional external Japanese SRT to use instead of
+                ElevenLabs ASR output for translation.
 
         Returns:
             A Project instance loaded from the saved JSON file, or a new
@@ -254,6 +258,11 @@ class Project(BaseModel):
             if parent_project_path is not None
             else None
         )
+        resolved_source_srt_path = (
+            Path(source_srt_path)
+            if source_srt_path is not None
+            else None
+        )
 
         logger.debug(f"Loading project: {id}")
         json_path = Path(PROJECT_ROOT_NAME) / id / PROJECT_FILE_NAME
@@ -265,6 +274,7 @@ class Project(BaseModel):
                 translation_hint=translation_hint,
                 parent_project_path=resolved_parent_path,
                 local_source_path=resolved_source_path,
+                source_srt_path=resolved_source_srt_path,
             )
 
         try:
@@ -281,6 +291,9 @@ class Project(BaseModel):
                 logger.warning(
                     f"Parent project is not supported for existing projects"
                 )
+            if resolved_source_srt_path is not None:
+                project.source_srt_path = resolved_source_srt_path
+                project.save()
             if (
                 resolved_source_path is not None
                 and project.local_source_path is None

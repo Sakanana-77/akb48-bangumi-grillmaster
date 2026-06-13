@@ -4,6 +4,7 @@ from services.srt import (
     TIMECODE_LINE_REGEX,
     SrtBlock,
     format_timecode,
+    import_srt_file,
     parse_srt,
     serialize_srt,
 )
@@ -110,6 +111,39 @@ class SerializeSrtTests(unittest.TestCase):
             "2\n00:00:03,000 --> 00:00:04,000\nworld\n"
         )
         self.assertEqual(serialize_srt(parse_srt(text)), text)
+
+
+class ImportSrtFileTests(unittest.TestCase):
+    def test_import_reindexes_and_strips_utf8_bom(self):
+        from pathlib import Path
+        import shutil
+
+        root = (
+            Path(__file__).resolve().parents[1]
+            / "tmp_test_artifacts"
+            / "tmp_import_srt"
+        )
+        shutil.rmtree(root, ignore_errors=True)
+        root.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+
+        input_path = root / "external.srt"
+        output_path = root / "video.ja.srt"
+        input_path.write_text(
+            "\ufeff5\n00:00:01,000 --> 00:00:02,000\nhello\n"
+            "\n"
+            "8\n00:00:03,000 --> 00:00:04,000\nworld\n",
+            encoding="utf-8",
+        )
+
+        import_srt_file(input_path, output_path)
+
+        self.assertEqual(
+            output_path.read_text(encoding="utf-8"),
+            "1\n00:00:01,000 --> 00:00:02,000\nhello\n"
+            "\n"
+            "2\n00:00:03,000 --> 00:00:04,000\nworld\n",
+        )
 
 
 class FormatTimecodeTests(unittest.TestCase):

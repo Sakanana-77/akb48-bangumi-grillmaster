@@ -7,6 +7,7 @@ on-disk shape. This module deliberately stays free of domain-specific logic
 """
 
 from .io import parse_srt, serialize_srt
+from .importer import import_srt_file
 from .timecode import TIMECODE_LINE_REGEX, format_timecode
 from .types import SrtBlock
 
@@ -14,6 +15,7 @@ __all__ = [
     "SrtBlock",
     "parse_srt",
     "serialize_srt",
+    "import_srt_file",
     "format_timecode",
     "TIMECODE_LINE_REGEX",
 ]

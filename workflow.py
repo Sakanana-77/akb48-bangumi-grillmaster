@@ -20,6 +20,7 @@ from services.elevenlabs import ElevenLabsASR, convert_file
 from services.gemini import Gemini, GeminiTranslationError, TranslationRequest
 from services.media import MediaProcessor
 from services.package import package_project
+from services.srt import import_srt_file
 from services.ytdlp import (
     download_video,
     get_abema_episode_talents,
@@ -33,6 +34,7 @@ def submit_project(
     translation_hint: str | None = None,
     break_after: ProgressStage | None = None,
     parent_project_path: str | None = None,
+    source_srt_path: str | None = None,
     enable_refine: bool = False,
     enable_glossary_check: bool = False,
     enable_cover: bool = False,
@@ -51,6 +53,8 @@ def submit_project(
         parent_project_path: Optional filesystem path to a parent project
             directory whose pre_pass.json should seed this project's pre-pass
             for cross-episode consistency.
+        source_srt_path: Optional external Japanese SRT to use instead of
+            ElevenLabs ASR output for the source subtitles.
         enable_refine: Force-enable the optional subtitle refinement stage.
             Overrides ``settings.enable_srt_refine`` when True.
         enable_glossary_check: Force-enable the optional fixed-glossary
@@ -69,6 +73,7 @@ def submit_project(
         source_str=source_str,
         translation_hint=translation_hint,
         parent_project_path=parent_project_path,
+        source_srt_path=source_srt_path,
     )
     new_project.save()
     logger.info(f"Project saved: {source_str}")
@@ -134,7 +139,7 @@ def process_project(
     2. Download video (kicks off async cover generation if enabled)
     3. Combine downloaded video segments
     4. Extract audio from video
-    5. Perform automatic speech recognition (ASR) and write source SRT
+    5. Perform ASR and write source SRT, or import an external source SRT
     6. Translate subtitles using Gemini
     7. Refine Simplified Chinese subtitles via Codex (optional)
     8. Glossary-check the refined subtitles via Codex (optional)
@@ -285,17 +290,25 @@ def process_project(
 
         # Process ASR
         if not project.is_asr_completed:
-            logger.info(f"Stage: Running ASR for {project_id}")
-            asr = ElevenLabsASR()
-            transcription_result = asr.transcribe_to_file(
-                project.audio_path, project.asr_path
-            )
-            if transcription_result.total_cost > 0:
-                project.add_cost("elevenlabs", transcription_result.total_cost)
-            logger.info(
-                f"Stage ASR cost: ${transcription_result.total_cost:.4f} "
-                f"for {transcription_result.audio_duration_secs:.2f}s"
-            )
+            if project.source_srt_path is not None:
+                logger.info(
+                    f"Stage: Skipping ASR for {project_id}; "
+                    f"using external source SRT {project.source_srt_path}"
+                )
+            else:
+                logger.info(f"Stage: Running ASR for {project_id}")
+                asr = ElevenLabsASR()
+                transcription_result = asr.transcribe_to_file(
+                    project.audio_path, project.asr_path
+                )
+                if transcription_result.total_cost > 0:
+                    project.add_cost(
+                        "elevenlabs", transcription_result.total_cost
+                    )
+                logger.info(
+                    f"Stage ASR cost: ${transcription_result.total_cost:.4f} "
+                    f"for {transcription_result.audio_duration_secs:.2f}s"
+                )
             project.mark_progress(ProgressStage.ASR_COMPLETED)
             logger.success("Stage complete: ASR completed")
         else:
@@ -307,8 +320,12 @@ def process_project(
 
         # Process SRT
         if not project.is_srt_completed:
-            logger.info(f"Stage: Converting ASR JSON to SRT for {project_id}")
-            convert_file(project.asr_path, project.srt_path)
+            if project.source_srt_path is not None:
+                logger.info(f"Stage: Importing source SRT for {project_id}")
+                import_srt_file(project.source_srt_path, project.srt_path)
+            else:
+                logger.info(f"Stage: Converting ASR JSON to SRT for {project_id}")
+                convert_file(project.asr_path, project.srt_path)
             project.mark_progress(ProgressStage.SRT_COMPLETED)
             logger.success("Stage complete: SRT generated")
         else:

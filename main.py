@@ -60,6 +60,18 @@ def process(
             show_default=False,
         ),
     ] = None,
+    source_srt: Annotated[
+        str | None,
+        typer.Option(
+            "--source-srt",
+            help=(
+                "Use an external Japanese SRT as the source subtitles and "
+                "skip ElevenLabs ASR/SRT generation. Video/audio are still "
+                "processed as Gemini context."
+            ),
+            show_default=False,
+        ),
+    ] = None,
     refine: Annotated[
         bool,
         typer.Option(
@@ -114,7 +126,8 @@ def process(
     logger.info(
         f"CLI invoked with source_str={source_str}, "
         f"translation_hint={translation_hint}, break_after={break_after}, "
-        f"parent_project={parent_project}, refine={refine}, "
+        f"parent_project={parent_project}, source_srt={source_srt}, "
+        f"refine={refine}, "
         f"glossary_check={glossary_check}, cover={cover}"
     )
 
@@ -124,6 +137,7 @@ def process(
             translation_hint=translation_hint,
             break_after=break_after,
             parent_project_path=parent_project,
+            source_srt_path=source_srt,
             enable_refine=refine,
             enable_glossary_check=glossary_check,
             enable_cover=cover,
