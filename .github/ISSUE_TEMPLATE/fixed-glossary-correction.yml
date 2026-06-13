@@ -1,0 +1,51 @@
+name: 固定译名校对
+description: 提交 AKB48 相关节目翻译中需要修正或新增的固定译名
+title: "【固定译名校对】"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。这个模板只用于收集固定译名、人物名、节目名、常用梗或专有名词的校对建议。
+        如果方便，请尽量提供日文原词、当前译法、建议译法和出现位置。
+  - type: input
+    id: source_term
+    attributes:
+      label: 日文原词
+      description: 例如成员名、节目名、组合名、梗、字幕里识别出的日文或罗马字。
+      placeholder: 例：向井地美音
+    validations:
+      required: true
+  - type: input
+    id: current_translation
+    attributes:
+      label: 当前译法
+      description: 项目当前输出的译法；如果是新增词，可以写“无”。
+      placeholder: 例：向井地美音
+    validations:
+      required: true
+  - type: input
+    id: suggested_translation
+    attributes:
+      label: 建议译法
+      description: 你认为应该固定采用的简体中文译法。
+      placeholder: 例：向井地美音
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 出现位置或上下文
+      description: 可以填写视频链接、集数、时间点、原字幕片段或截图说明。
+      placeholder: |
+        视频/节目：
+        时间点：
+        原句或上下文：
+    validations:
+      required: false
+  - type: textarea
+    id: reason
+    attributes:
+      label: 修改理由或参考来源
+      description: 如果有官方写法、常见译法、粉丝社区惯用法或参考链接，可以写在这里。
+    validations:
+      required: false
