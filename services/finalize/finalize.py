@@ -61,6 +61,9 @@ _SPEAKER_DASH = re.compile(
     r"^[ \t　]*[-‐-―−－][ \t　]*"
 )
 _NORMALIZED_SPEAKER_DASH = re.compile(r"^-\s*")
+_MIDLINE_DIALOGUE_DASH = re.compile(
+    r"[ \t\u3000]*[\u2010-\u2015\u2212\uff0d][ \t\u3000]*"
+)
 _SRT_TIMECODE = re.compile(
     r"^\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*"
     r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*$"
@@ -240,10 +243,31 @@ def _clean_line(line: str) -> str:
     line = _ELLIPSIS_RUN.sub("…", line)
     line = _QUOTE_TAIL_PUNCT.sub("", line)
     line = _FW_PUNCT_SPACE.sub(r"\1", line)
+    line = _normalize_midline_dialogue_dash(line)
     line = _PURE_LATIN_PHRASE_BOUNDARY_SPACE.sub(r"\1\2\3", line)
     line = line.replace("。", "")
     line = line.replace("，", " ")
     return line
+
+
+def _normalize_midline_dialogue_dash(line: str) -> str:
+    """Render LLM-written mid-line dialogue dashes in the project style."""
+
+    def replace(match: re.Match) -> str:
+        start, end = match.span()
+        before = line[start - 1] if start > 0 else ""
+        after = line[end] if end < len(line) else ""
+        if not before or not after:
+            return match.group(0)
+        if before.isascii() and before.isalnum():
+            return match.group(0)
+        if after.isascii() and after.isalnum():
+            return match.group(0)
+        if before.isdigit() and after.isdigit():
+            return match.group(0)
+        return "  - "
+
+    return _MIDLINE_DIALOGUE_DASH.sub(replace, line)
 
 
 def _join_cleaned_lines(lines: list[str]) -> str:

@@ -29,6 +29,19 @@ class AssConverterTextCleaningTests(unittest.TestCase):
             "What do you want?  - I want noodles",
         )
 
+    def test_normalizes_midline_em_dash_dialogue(self):
+        self.assertEqual(
+            _clean_text("顺便问一下 谁来摇绳？— 是由前辈小鸣和彩音来摇"),
+            "顺便问一下 谁来摇绳？  - 是由前辈小鸣和彩音来摇",
+        )
+        self.assertEqual(
+            _clean_text("太厉害了— 只有在中山筋肉君那里才听得到"),
+            "太厉害了  - 只有在中山筋肉君那里才听得到",
+        )
+
+    def test_preserves_ascii_hyphen_inside_text(self):
+        self.assertEqual(_clean_text("AKB48 Team-A"), "AKB48 Team-A")
+
     def test_removes_single_line_speaker_dash(self):
         self.assertEqual(_clean_text("- Good night"), "Good night")
 
