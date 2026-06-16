@@ -52,7 +52,8 @@ _QUOTE_TAIL_PUNCT = re.compile(r"[\s，、；。]+(?=[」』])")
 # two clauses on one line as "好帅。 很有型", and the "。"→"，" pass would
 # otherwise leave "好帅， 很有型".
 _FW_PUNCT_SPACE = re.compile(r"[ \t　]*([，、；。：！？])[ \t　]*")
-# Two-speaker dialogue uses an English hyphen with NO space after it.
+# Two-speaker dialogue uses an English hyphen on one physical line:
+# first speaker text + two half-width spaces + "- " + second speaker text.
 # Normalize a leading speaker dash —
 # any hyphen/dash variant incl. full-width "－" (U+FF0D), en/em dash, minus —
 # plus surrounding spaces, to a single half-width "-". A leading "--"
@@ -64,6 +65,7 @@ _NORMALIZED_SPEAKER_DASH = re.compile(r"^-\s*")
 _MIDLINE_DIALOGUE_DASH = re.compile(
     r"[ \t\u3000]*[\u2010-\u2015\u2212\uff0d][ \t\u3000]*"
 )
+_MIDLINE_ASCII_DIALOGUE_DASH = re.compile(r"[ \t\u3000]*-[ \t\u3000]+")
 _SRT_TIMECODE = re.compile(
     r"^\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*"
     r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*$"
@@ -253,21 +255,38 @@ def _clean_line(line: str) -> str:
 def _normalize_midline_dialogue_dash(line: str) -> str:
     """Render LLM-written mid-line dialogue dashes in the project style."""
 
-    def replace(match: re.Match) -> str:
+    def replace(match: re.Match, *, allow_ascii_edge: bool) -> str:
         start, end = match.span()
         before = line[start - 1] if start > 0 else ""
         after = line[end] if end < len(line) else ""
         if not before or not after:
             return match.group(0)
-        if before.isascii() and before.isalnum():
-            return match.group(0)
-        if after.isascii() and after.isalnum():
-            return match.group(0)
         if before.isdigit() and after.isdigit():
+            return match.group(0)
+        if (
+            allow_ascii_edge
+            and before.isascii()
+            and before.isalnum()
+            and after.isascii()
+            and after.isalnum()
+        ):
+            return match.group(0)
+        if (
+            not allow_ascii_edge
+            and (
+                (before.isascii() and before.isalnum())
+                or (after.isascii() and after.isalnum())
+            )
+        ):
             return match.group(0)
         return "  - "
 
-    return _MIDLINE_DIALOGUE_DASH.sub(replace, line)
+    line = _MIDLINE_DIALOGUE_DASH.sub(
+        lambda match: replace(match, allow_ascii_edge=False), line
+    )
+    return _MIDLINE_ASCII_DIALOGUE_DASH.sub(
+        lambda match: replace(match, allow_ascii_edge=True), line
+    )
 
 
 def _join_cleaned_lines(lines: list[str]) -> str:

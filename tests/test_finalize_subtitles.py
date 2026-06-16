@@ -39,8 +39,19 @@ class AssConverterTextCleaningTests(unittest.TestCase):
             "太厉害了  - 只有在中山筋肉君那里才听得到",
         )
 
+    def test_normalizes_midline_spaced_ascii_dialogue_dash(self):
+        self.assertEqual(
+            _clean_text("顺便问一下 谁来摇绳？ - 是由前辈来摇"),
+            "顺便问一下 谁来摇绳？  - 是由前辈来摇",
+        )
+        self.assertEqual(
+            _clean_text("太厉害了 - 只有那里才听得到"),
+            "太厉害了  - 只有那里才听得到",
+        )
+
     def test_preserves_ascii_hyphen_inside_text(self):
         self.assertEqual(_clean_text("AKB48 Team-A"), "AKB48 Team-A")
+        self.assertEqual(_clean_text("3 - 4"), "3 - 4")
 
     def test_removes_single_line_speaker_dash(self):
         self.assertEqual(_clean_text("- Good night"), "Good night")
